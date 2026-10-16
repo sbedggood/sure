@@ -2,35 +2,39 @@
 <% uploaded = Current.family.tax_documents.for_year(financial_year.start_year).includes(file_attachment: :blob, entry: [ :account, { entryable: :merchant } ]) %>
 <% rows = document_rows.presence || Tax::DocumentCatalog.new(family: Current.family).rows_for_fy(financial_year.start_year) %>
 
-<%= form_with url: tax_documents_path, method: :post, multipart: true, class: "mb-4 flex flex-wrap gap-3 items-end rounded-xl bg-container-inset p-4" do %>
-  <%= hidden_field_tag :start_year, financial_year.start_year %>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.type") %></label>
-    <%= select_tag :document_type, options_for_select(TaxDocument::DOCUMENT_TYPES), class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
-  </div>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.date") %></label>
-    <%= date_field_tag :document_date, nil, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
-  </div>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.calendar.note") %></label>
-    <%= text_field_tag :note, nil, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
-  </div>
-  <div>
-    <%= file_field_tag :file, required: true, class: "text-sm text-primary" %>
-  </div>
-  <%= submit_tag t("tax.documents.upload"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
-<% end %>
+<div class="bg-container rounded-xl shadow-border-xs p-4 space-y-4 mb-4">
+  <%= form_with url: tax_documents_path, method: :post, multipart: true, class: "flex flex-wrap gap-3 items-end" do %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <div>
+      <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.type") %></label>
+      <%= select_tag :document_type, options_for_select(TaxDocument::DOCUMENT_TYPES), class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
+    </div>
+    <div>
+      <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.date") %></label>
+      <%= date_field_tag :document_date, nil, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
+    </div>
+    <div class="min-w-[12rem] flex-1">
+      <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.calendar.note") %></label>
+      <%= text_field_tag :note, nil, class: "mt-1 w-full rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
+    </div>
+    <div>
+      <label class="text-xs font-medium text-secondary uppercase sr-only"><%= t("tax.documents.file") %></label>
+      <%= file_field_tag :file, required: true, class: "mt-1 text-sm text-primary max-w-xs" %>
+    </div>
+    <%= render DS::Button.new(text: t("tax.documents.upload"), variant: "primary", type: "submit") %>
+  <% end %>
 
-<%= form_with url: tax_dashboard_path, method: :get, class: "mb-4 flex items-center gap-2" do %>
-  <%= hidden_field_tag :section, "documents" %>
-  <%= hidden_field_tag :start_year, financial_year.start_year %>
-  <label class="text-sm text-secondary" for="doc_scope"><%= t("tax.documents.scope_label") %></label>
-  <%= select_tag :doc_scope,
-    options_for_select([[t("tax.documents.scope_fy", fy: financial_year.label), "fy"], [t("tax.documents.scope_all"), "all"]], doc_scope),
-    class: "rounded-md border border-primary bg-container px-2 py-1 text-sm",
-    onchange: "this.form.submit()" %>
-<% end %>
+  <%= form_with url: tax_dashboard_path, method: :get, class: "flex flex-wrap items-center gap-2 pt-2 border-t border-subdued" do %>
+    <%= hidden_field_tag :section, "documents" %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <label class="text-sm text-secondary" for="doc_scope"><%= t("tax.documents.scope_label") %></label>
+    <%= select_tag :doc_scope,
+      options_for_select([[t("tax.documents.scope_fy", fy: financial_year.label), "fy"], [t("tax.documents.scope_all"), "all"]], doc_scope),
+      id: "doc_scope",
+      class: "min-w-40 rounded-md border border-primary bg-container px-3 py-1.5 text-sm",
+      onchange: "this.form.submit()" %>
+  <% end %>
+</div>
 
 <%= render "tax/documents/table", rows: rows, show_transaction_columns: true %>
 

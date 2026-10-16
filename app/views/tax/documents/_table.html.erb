@@ -15,13 +15,12 @@
               <th class="px-3 py-3 text-left min-w-12"></th>
               <th class="px-3 py-3 text-left min-w-44"><%= t("tax.documents_all.merchant") %></th>
               <th class="px-3 py-3 text-right min-w-24"><%= t("tax.documents_all.amount") %></th>
-              <th class="px-3 py-3 text-left min-w-32"><%= t("tax.documents_all.account") %></th>
               <th class="px-3 py-3 text-left min-w-28"><%= t("tax.documents_all.date") %></th>
             <% end %>
             <th class="px-3 py-3 text-left min-w-40"><%= t("tax.documents_all.file") %></th>
             <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.period") %></th>
             <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.type") %></th>
-            <th class="px-3 py-3 text-right min-w-24"><%= t("tax.documents_all.actions") %></th>
+            <th class="px-3 py-3 text-right min-w-32"><%= t("tax.documents_all.actions") %></th>
           </tr>
         </thead>
         <tbody>
@@ -37,22 +36,26 @@
                     <%= icon("file-text", size: "sm", class: "text-secondary") %>
                   <% end %>
                 </td>
-                <td class="px-3 py-3 text-sm font-medium text-primary">
+                <td class="px-3 py-3 text-sm min-w-0">
                   <% if row.entry_id %>
-                    <%= link_to row.entry_name, row.view_url, class: "hover:underline", data: { turbo_frame: "drawer" } %>
+                    <%= link_to row.entry_name, row.view_url, class: "font-medium text-primary hover:underline block truncate", data: { turbo_frame: "drawer" } %>
                   <% else %>
-                    —
+                    <span class="font-medium text-primary">—</span>
+                  <% end %>
+                  <% if row.account_name.present? %>
+                    <span class="text-xs text-secondary block truncate"><%= row.account_name %></span>
                   <% end %>
                 </td>
                 <td class="px-3 py-3 text-sm text-right text-primary privacy-sensitive">
                   <%= row.entry_amount ? number_to_currency(row.entry_amount) : "—" %>
                 </td>
-                <td class="px-3 py-3 text-sm text-secondary"><%= row.account_name || "—" %></td>
                 <td class="px-3 py-3 text-sm text-secondary"><%= row.entry_date ? l(row.entry_date) : "—" %></td>
               <% end %>
-              <td class="px-3 py-3 text-sm">
-                <span class="block truncate font-medium text-primary"><%= row.filename %></span>
-                <span class="text-xs text-secondary"><%= number_to_human_size(row.byte_size) %></span>
+              <td class="px-3 py-3 text-sm min-w-0">
+                <%= link_to row.view_url, class: "block min-w-0 hover:underline", data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
+                  <span class="block truncate font-medium text-primary"><%= row.filename %></span>
+                  <span class="text-xs text-secondary"><%= number_to_human_size(row.byte_size) %></span>
+                <% end %>
               </td>
               <td class="px-3 py-3 text-sm text-secondary">
                 <span class="block"><%= row.period_label %></span>
@@ -62,10 +65,14 @@
                 <%= render DS::Pill.new(label: row.document_type, tone: :neutral, marker: false) %>
               </td>
               <td class="px-3 py-3">
-                <div class="flex items-center justify-end gap-3">
-                  <%= link_to row.view_url, aria: { label: t("tax.documents_all.view") }, data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
-                    <%= icon("eye", class: "w-5 h-5 text-primary") %>
-                  <% end %>
+                <div class="flex items-center justify-end gap-2 flex-wrap">
+                  <%= render DS::Link.new(
+                        text: t("tax.documents_all.view"),
+                        variant: "ghost",
+                        href: row.view_url,
+                        frame: row.entry_id ? "drawer" : "_top",
+                        class: "text-xs shrink-0"
+                      ) %>
                   <% if row.tax_document_id %>
                     <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id), aria: { label: t("tax.documents_all.link") }, data: { turbo_frame: "drawer" } do %>
                       <%= icon("link-2", class: "w-5 h-5 text-primary") %>

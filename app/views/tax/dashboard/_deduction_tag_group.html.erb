@@ -34,12 +34,12 @@
   </div>
   <div class="bg-container shadow-border-xs rounded-lg">
     <% group.entries.each do |entry| %>
-      <div class="relative border-b border-subdued last:border-0">
+      <div class="border-b border-subdued last:border-0">
         <%= render "tax/dashboard/deduction_attachments", entry: entry %>
+        <%= render "entries/entry", entry: entry, view_ctx: "tax_deductions" %>
         <% if for_review && deductions %>
           <%= render "tax/dashboard/review_actions", entry: entry, financial_year: financial_year, deductions: deductions %>
         <% end %>
-        <%= render "entries/entry", entry: entry, view_ctx: "tax_deductions" %>
       </div>
     <% end %>
   </div>

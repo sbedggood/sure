@@ -6,6 +6,7 @@ module Tax
 
     before_action :set_financial_year
     before_action :set_settings
+    before_action :set_breadcrumbs
 
     def show
       @section = params[:section].presence || "calendar"
@@ -21,6 +22,13 @@ module Tax
     end
 
     private
+
+      def set_breadcrumbs
+        @breadcrumbs = [
+          [ I18n.t("breadcrumbs.home"), root_path ],
+          [ I18n.t("breadcrumbs.tax"), nil ]
+        ]
+      end
 
       def set_financial_year
         @financial_year = Tax::FinancialYear.new(tax_start_year_from_params)

@@ -1,43 +1,56 @@
 <% content_for :title, t("tax.title") %>
 
-<div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
-  <header class="flex justify-between items-center gap-4 text-primary font-medium">
-    <div class="min-w-0">
-      <h1 class="text-xl"><%= t("tax.title") %></h1>
-      <p class="text-sm text-secondary mt-0.5"><%= @financial_year.label %> · <%= l(@financial_year.start_on, format: :long) %> – <%= l(@financial_year.end_on, format: :long) %></p>
-    </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <%= form_with url: tax_dashboard_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex items-center" do |f| %>
-        <%= hidden_field_tag :section, @section %>
-        <%= render DS::Select.new(
-              form: f,
-              method: :start_year,
-              items: @fy_options.map { |label, value| { label: label, value: value } },
-              selected: @financial_year.start_year,
-              label: t("tax.fy_label")
+<% content_for :page_header do %>
+  <div class="space-y-4 mb-6">
+    <header class="flex justify-between items-center text-primary font-medium gap-4">
+      <div class="space-y-1 min-w-0">
+        <h1 class="text-xl lg:text-3xl font-medium text-primary">
+          <%= t("tax.title") %>
+        </h1>
+        <p class="text-sm lg:text-base text-secondary">
+          <%= t("tax.subtitle", fy: @financial_year.label, start: l(@financial_year.start_on, format: :long), end: l(@financial_year.end_on, format: :long)) %>
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-end gap-2 shrink-0">
+        <%= form_with url: tax_dashboard_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex items-center" do |f| %>
+          <%= hidden_field_tag :section, @section %>
+          <label class="sr-only" for="tax_start_year"><%= t("tax.fy_label") %></label>
+          <%= f.select :start_year,
+                options_for_select(@fy_options, @financial_year.start_year),
+                {},
+                id: "tax_start_year",
+                class: "rounded-lg border border-secondary bg-container px-3 py-2 text-sm text-primary max-w-full",
+                data: { auto_submit_form_target: "auto" } %>
+        <% end %>
+        <%= render DS::Link.new(
+              text: t("tax.export"),
+              icon: "download",
+              variant: "outline",
+              href: tax_export_path(start_year: @financial_year.start_year),
+              frame: "_top"
             ) %>
+      </div>
+    </header>
+
+    <%= render "tax/dashboard/fy_summary", summary: @summary, deductions: @deductions %>
+
+    <div class="flex items-center justify-between gap-4">
+      <%= render DS::SegmentedControl.new(aria_label: t("tax.sections.aria_label"), class: "bg-surface-inset overflow-x-auto no-scrollbar self-start") do |control| %>
+        <% %w[calendar property deductions documents].each do |section| %>
+          <% control.with_segment(
+               t("tax.sections.#{section}"),
+               active: @section == section,
+               href: tax_dashboard_path(start_year: @financial_year.start_year, section: section),
+               class: "whitespace-nowrap px-4"
+             ) %>
+        <% end %>
       <% end %>
-      <%= render DS::Link.new(
-            text: t("tax.export"),
-            icon: "download",
-            variant: "outline",
-            href: tax_export_path(start_year: @financial_year.start_year),
-            frame: "_top"
-          ) %>
     </div>
-  </header>
+  </div>
+<% end %>
 
-  <%= render DS::SegmentedControl.new(aria_label: t("tax.sections.aria_label"), class: "bg-surface-inset max-w-full overflow-x-auto") do |control| %>
-    <% %w[calendar property deductions documents].each do |section| %>
-      <% control.with_segment(
-           t("tax.sections.#{section}"),
-           active: @section == section,
-           href: tax_dashboard_path(start_year: @financial_year.start_year, section: section),
-           class: "whitespace-nowrap px-4"
-         ) %>
-    <% end %>
-  <% end %>
-
+<div class="w-full space-y-4 lg:pb-6">
   <% case @section %>
   <% when "calendar" %>
     <%= render "tax/dashboard/calendar", weeks: @weeks, financial_year: @financial_year, summary: @summary %>

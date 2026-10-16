@@ -1,24 +1,39 @@
 <% content_for :title, t("tax.documents_all.page_title") %>
 
-<div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
-  <header class="flex justify-between items-center gap-4 text-primary font-medium">
-    <h1 class="text-xl"><%= t("tax.documents_all.page_title") %></h1>
-    <%= render DS::Link.new(
-          text: t("tax.documents.upload"),
-          icon: "plus",
-          variant: "primary",
-          href: tax_dashboard_path(section: "documents"),
-          frame: "_top"
-        ) %>
-  </header>
+<% content_for :page_header do %>
+  <div class="space-y-4 mb-6">
+    <header class="flex justify-between items-center text-primary font-medium gap-4">
+      <div class="space-y-1 min-w-0">
+        <h1 class="text-xl lg:text-3xl font-medium text-primary">
+          <%= t("tax.documents_all.page_title") %>
+        </h1>
+        <p class="text-sm lg:text-base text-secondary">
+          <%= t("tax.documents_all.subtitle") %>
+        </p>
+      </div>
 
-  <%= form_with url: tax_documents_path, method: :get, class: "flex flex-wrap items-center gap-3" do %>
-    <label class="text-sm text-secondary" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
-    <%= select_tag :doc_fy,
-      options_for_select([[t("tax.documents_all.all_fys"), ""]] + @fy_options, @fy_filter),
-      class: "rounded-md border border-primary bg-container px-2 py-1 text-sm",
-      onchange: "this.form.submit()" %>
-  <% end %>
+      <%= render DS::Link.new(
+            text: t("tax.documents.upload"),
+            icon: "plus",
+            variant: "primary",
+            href: tax_dashboard_path(section: "documents"),
+            frame: "_top"
+          ) %>
+    </header>
 
+    <div class="bg-container rounded-xl shadow-border-xs p-4">
+      <%= form_with url: tax_documents_path, method: :get, class: "flex flex-wrap items-center gap-3" do %>
+        <label class="text-sm text-secondary shrink-0" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
+        <%= select_tag :doc_fy,
+          options_for_select([[t("tax.documents_all.all_fys"), ""]] + @fy_options, @fy_filter),
+          id: "doc_fy",
+          class: "min-w-52 rounded-md border border-primary bg-container pl-3 pr-10 py-1.5 text-sm",
+          onchange: "this.form.submit()" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<div class="w-full lg:pb-6">
   <%= render "tax/documents/table", rows: @rows, show_transaction_columns: true %>
 </div>
