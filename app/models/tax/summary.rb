@@ -46,7 +46,7 @@ module Tax
           monthly = months.index_with { |m| BigDecimal("0") }
           tagged_transactions[tag_name]&.each do |entry|
             month = entry.date.beginning_of_month.to_date
-            monthly[month] += entry.amount if monthly.key?(month)
+            monthly[month] += property_line_amount(entry) if monthly.key?(month)
           end
           total = monthly.values.sum
           {
@@ -61,7 +61,7 @@ module Tax
         rental_tag_names.each do |tag_name|
           tagged_transactions[tag_name]&.each do |entry|
             month = entry.date.beginning_of_month.to_date
-            rent_by_month[month] += income_amount(entry) if rent_by_month.key?(month)
+            rent_by_month[month] += property_line_amount(entry) if rent_by_month.key?(month)
           end
         end
 
@@ -78,7 +78,7 @@ module Tax
           expense_rows: rows,
           rental_income: {
             by_tag: rental_tag_names.map { |name|
-              total = tagged_transactions[name]&.sum { |e| income_amount(e) } || BigDecimal("0")
+              total = tagged_transactions[name]&.sum { |e| property_line_amount(e) } || BigDecimal("0")
               { tag: name, total: total.to_f }
             },
             by_month: rent_by_month.transform_keys { |d| d.iso8601 }.transform_values(&:to_f),
@@ -174,8 +174,9 @@ module Tax
         family.tags.where("name LIKE ?", "#{TagCatalog::RENTAL_INCOME_PREFIX}%").pluck(:name).sort
       end
 
-      def income_amount(entry)
-        -entry.amount
+      # Property costs and rental income may be negative (statement import) or positive (sync).
+      def property_line_amount(entry)
+        entry.amount.abs
       end
 
       def transaction_row(entry)

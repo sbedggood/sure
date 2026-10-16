@@ -70,4 +70,31 @@ class Tax::SummaryTest < ActiveSupport::TestCase
     assert_equal 10.0, summary.dig(:deductions, :home_office, :wfh_hours_total)
     assert_equal 100.0, summary.dig(:deductions, :car, :km_total)
   end
+
+  test "property interest and rental totals use absolute amounts for mixed signs" do
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 20),
+      amount: -180,
+      currency: "AUD",
+      name: "Interest from statement",
+      tags: [ @interest_tag ]
+    )
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 25),
+      amount: 1500,
+      currency: "AUD",
+      name: "Rent from sync",
+      tags: [ @rent_tag ]
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    interest_row = summary.dig(:property, :expense_rows).find { |r| r[:tag] == "Tax: Property - Interest" }
+
+    assert_equal 380.0, interest_row[:total]
+    assert_equal 3000.0, summary.dig(:property, :rental_income, :total)
+    assert_equal 380.0, summary.dig(:property, :cost_total)
+  end
 end
