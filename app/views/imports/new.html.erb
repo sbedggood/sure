@@ -30,7 +30,7 @@
     <% end %>
 
     <%
-      financial_tool_types = %w[MintImport ActualImport YnabImport QifImport SureImport DocumentImport PdfImport]
+      financial_tool_types = %w[MintImport ActualImport YnabImport CommBankImport QifImport SureImport DocumentImport PdfImport]
       import_type = params[:type].presence || @pending_import&.type
       active_tab = import_type.present? && !import_type.in?(financial_tool_types) ? "raw_data" : "financial_tools"
     %>
@@ -125,6 +125,16 @@
                 type: "YnabImport",
                 image: "ynab-logo.png",
                 label: t(".import_ynab"),
+                enabled: true %>
+            <% end %>
+
+            <% if params[:type].nil? || params[:type] == "CommBankImport" %>
+              <%= render "imports/import_option",
+                type: "CommBankImport",
+                icon_name: "landmark",
+                icon_bg_class: "bg-yellow-500/5",
+                icon_text_class: "text-yellow-600",
+                label: t(".import_commbank"),
                 enabled: true %>
             <% end %>
 

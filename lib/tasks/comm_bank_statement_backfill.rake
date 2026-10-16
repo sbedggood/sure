@@ -9,7 +9,7 @@
 #   bin/rails comm_bank_statement:backfill ROOT=/taxes MAPPING=/rails/config/commbank_statement_mapping.yml APPLY=1
 #
 namespace :comm_bank_statement do
-  desc "Parse CommBank PDF statements and backfill transactions before Redbark sync. Env: ROOT, MAPPING, APPLY=1, FAMILY_EMAIL"
+  desc "Parse CommBank PDF statements and backfill transactions before Redbark sync. Env: ROOT, MAPPING, APPLY=1, FAMILY_EMAIL, ONLY, LIMIT, OFFSET"
   task backfill: :environment do
     root = ENV.fetch("ROOT", nil)
     mapping_path = ENV.fetch("MAPPING", nil)
@@ -43,7 +43,10 @@ namespace :comm_bank_statement do
       family: family,
       root: root,
       mapping: mapping,
-      apply: apply
+      apply: apply,
+      only: ENV["ONLY"],
+      limit: ENV["LIMIT"],
+      offset: ENV.fetch("OFFSET", 0)
     ).run
   end
 end

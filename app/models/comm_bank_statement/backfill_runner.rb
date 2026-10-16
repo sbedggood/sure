@@ -9,23 +9,32 @@ module CommBankStatement
     FUZZY_NAME_THRESHOLD = 0.55
 
     StatementReport = Data.define(
-      :path, :account, :parse_result, :imported, :skipped_overlap, :skipped_duplicate,
-      :skipped_parse, :errors
+      :path, :account, :statement_type, :transaction_count, :imported, :skipped_overlap,
+      :skipped_duplicate, :skipped_parse, :balance_check_passed, :errors
     )
 
-    def initialize(family:, root:, mapping:, apply: false, stdout: $stdout)
+    RunSummary = Data.define(
+      :reports, :statement_count, :balance_failures, :imported_total, :overlap_skipped_total,
+      :duplicate_skipped_total
+    )
+
+    def initialize(family:, root:, mapping:, apply: false, stdout: $stdout, only: nil, limit: nil, offset: 0)
       @family = family
       @root = Pathname.new(root)
       @mapping = mapping
       @apply = apply
       @stdout = stdout
+      @only = only.presence
+      @limit = limit&.to_i
+      @offset = offset.to_i
+      @accounts_to_sync = Set.new
     end
 
     def run
       reports = []
-      pdf_files = @root.glob("**/*.pdf").sort
+      Current.defer_account_syncs = @apply
 
-      pdf_files.each do |path|
+      each_pdf_path do |path|
         relative = path.relative_path_from(@root).to_s
         account_id = @mapping.match_account_id(relative)
 
@@ -45,33 +54,55 @@ module CommBankStatement
           next
         end
 
-        begin
-          parse_result = Parser.parse_file(path.to_s)
-        rescue SkippedDocument => e
-          log "SKIP #{relative} (#{e.reason})"
-          next
-        rescue Parser::ParseError => e
-          reports << StatementReport.new(path: relative, account: account, parse_result: nil,
-            imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1, errors: [ e.message ])
-          next
-        rescue StandardError => e
-          log "ERROR #{relative} | #{e.class}: #{e.message}"
-          reports << StatementReport.new(path: relative, account: account, parse_result: nil,
-            imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1,
-            errors: [ "#{e.class}: #{e.message}" ])
-          next
-        end
-
-        report = process_statement(path, relative, account, parse_result)
-        reports << report
-        print_report(report)
+        report = process_path(path, relative, account)
+        reports << report if report
+        print_report(report) if report
+        GC.start if @apply
       end
 
-      print_summary(reports)
-      reports
+      sync_deferred_accounts! if @apply
+      summary = build_summary(reports)
+      print_summary(summary)
+      summary
+    ensure
+      Current.defer_account_syncs = false
     end
 
     private
+
+      def each_pdf_path
+        paths = @root.glob("**/*.pdf").sort
+        if @only.present?
+          paths.select! { |path| File.fnmatch(@only, path.relative_path_from(@root).to_s, File::FNM_PATHNAME | File::FNM_EXTGLOB) }
+        end
+        paths = paths.drop(@offset) if @offset.positive?
+        paths = paths.first(@limit) if @limit&.positive?
+
+        paths.each { |path| yield path }
+      end
+
+      def process_path(path, relative, account)
+        parse_result = Parser.parse_file(path.to_s)
+        report = process_statement(path, relative, account, parse_result)
+        @accounts_to_sync << account.id if @apply && report.imported.positive?
+        report
+      rescue SkippedDocument => e
+        log "SKIP #{relative} (#{e.reason})"
+        nil
+      rescue Parser::ParseError => e
+        StatementReport.new(
+          path: relative, account: account, statement_type: nil, transaction_count: 0,
+          imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1,
+          balance_check_passed: false, errors: [ e.message ]
+        )
+      rescue StandardError => e
+        log "ERROR #{relative} | #{e.class}: #{e.message}"
+        StatementReport.new(
+          path: relative, account: account, statement_type: nil, transaction_count: 0,
+          imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1,
+          balance_check_passed: false, errors: [ "#{e.class}: #{e.message}" ]
+        )
+      end
 
       def process_statement(path, relative, account, parse_result)
         imported = 0
@@ -80,70 +111,108 @@ module CommBankStatement
         errors = parse_result.balance_check_errors.dup
 
         unless parse_result.balance_check_passed
-          return StatementReport.new(
+          return statement_report(
             path: relative, account: account, parse_result: parse_result,
-            imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 0, errors: errors
+            imported: 0, skipped_overlap: 0, skipped_duplicate: 0, errors: errors
           )
         end
 
         cutoff = cutoff_date_for(account)
         adapter = Account::ProviderImportAdapter.new(account)
-        claimed = Set.new
-        to_import = []
 
-        parse_result.transactions.each do |txn|
-          if txn.date >= cutoff
-            skipped_overlap += 1
-            next
+        if @apply
+          ActiveRecord::Base.transaction do
+            parse_result.transactions.each do |txn|
+              outcome = classify_transaction(txn, account, adapter, cutoff, relative)
+              case outcome
+              when :overlap then skipped_overlap += 1
+              when :duplicate then skipped_duplicate += 1
+              when :import
+                import_transaction!(adapter, account, txn, relative)
+                imported += 1
+              end
+            end
+
+            store_statement_vault!(path, account, parse_result)
           end
-
-          sure_amount = EntryAmountConverter.to_sure_amount(txn.amount, account)
-          if duplicate?(adapter, txn, sure_amount, account.currency, claimed)
-            skipped_duplicate += 1
-            next
+        else
+          parse_result.transactions.each do |txn|
+            outcome = classify_transaction(txn, account, adapter, cutoff, relative)
+            case outcome
+            when :overlap then skipped_overlap += 1
+            when :duplicate then skipped_duplicate += 1
+            when :import then imported += 1
+            end
           end
-
-          imported += 1
-          to_import << [ txn, sure_amount ] if @apply
         end
 
-        apply_statement!(path, relative, account, parse_result, adapter, to_import) if @apply
-
-        StatementReport.new(
+        statement_report(
           path: relative, account: account, parse_result: parse_result,
-          imported: imported, skipped_overlap: skipped_overlap, skipped_duplicate: skipped_duplicate,
-          skipped_parse: 0, errors: errors
+          imported: imported, skipped_overlap: skipped_overlap, skipped_duplicate: skipped_duplicate, errors: errors
         )
       rescue StandardError => e
         errors << "#{e.class}: #{e.message}"
-        StatementReport.new(
+        statement_report(
           path: relative, account: account, parse_result: parse_result,
           imported: @apply ? 0 : imported,
           skipped_overlap: skipped_overlap,
           skipped_duplicate: skipped_duplicate,
-          skipped_parse: 0, errors: errors
+          errors: errors
         )
       end
 
-      def apply_statement!(path, relative, account, parse_result, adapter, to_import)
-        ActiveRecord::Base.transaction do
-          to_import.each do |txn, sure_amount|
-            external_id = external_id_for(account, txn, sure_amount)
-            adapter.import_transaction(
-              external_id: external_id,
-              amount: sure_amount,
-              currency: account.currency,
-              date: txn.date,
-              name: txn.description.to_s.truncate(255),
-              source: SOURCE,
-              notes: "Imported from CommBank PDF statement backfill",
-              extra: { "commbank_statement" => { "file" => relative } },
-              allow_heuristic_matching: false
-            )
-          end
+      def classify_transaction(txn, account, adapter, cutoff, relative)
+        return :overlap if txn.date >= cutoff
 
-          store_statement_vault!(path, account, parse_result)
-        end
+        sure_amount = EntryAmountConverter.to_sure_amount(txn.amount, account)
+        return :duplicate if duplicate?(adapter, account, txn, sure_amount, account.currency)
+
+        :import
+      end
+
+      def import_transaction!(adapter, account, txn, relative)
+        sure_amount = EntryAmountConverter.to_sure_amount(txn.amount, account)
+        adapter.import_transaction(
+          external_id: external_id_for(account, txn, sure_amount),
+          amount: sure_amount,
+          currency: account.currency,
+          date: txn.date,
+          name: txn.description.to_s.truncate(255),
+          source: SOURCE,
+          notes: "Imported from CommBank PDF statement backfill",
+          extra: { "commbank_statement" => { "file" => relative } },
+          allow_heuristic_matching: false
+        )
+      end
+
+      def statement_report(path:, account:, parse_result:, imported:, skipped_overlap:, skipped_duplicate:, errors:)
+        StatementReport.new(
+          path: path,
+          account: account,
+          statement_type: parse_result.statement_type,
+          transaction_count: parse_result.transactions.size,
+          imported: imported,
+          skipped_overlap: skipped_overlap,
+          skipped_duplicate: skipped_duplicate,
+          skipped_parse: 0,
+          balance_check_passed: parse_result.balance_check_passed,
+          errors: errors
+        )
+      end
+
+      def sync_deferred_accounts!
+        Account.where(id: @accounts_to_sync.to_a).find_each(&:sync_later)
+      end
+
+      def build_summary(reports)
+        RunSummary.new(
+          reports: reports,
+          statement_count: reports.size,
+          balance_failures: reports.count { |r| !r.balance_check_passed },
+          imported_total: reports.sum(&:imported),
+          overlap_skipped_total: reports.sum(&:skipped_overlap),
+          duplicate_skipped_total: reports.sum(&:skipped_duplicate)
+        )
       end
 
       def store_statement_vault!(path, account, parse_result)
@@ -186,40 +255,23 @@ module CommBankStatement
         earliest&.to_date || Date.current
       end
 
-      def duplicate?(adapter, txn, sure_amount, currency, claimed)
-        exact = adapter.find_duplicate_transaction(
-          date: txn.date,
-          amount: sure_amount,
-          currency: currency,
-          date_window: DATE_WINDOW,
-          include_provider_entries: true,
-          exclude_entry_ids: claimed
-        )
-        if exact
-          claimed << exact.id
-          return true
-        end
+      def duplicate?(adapter, account, txn, sure_amount, currency)
+        external_id = external_id_for(account, txn, sure_amount)
+        return true if account.entries.exists?(external_id: external_id, source: SOURCE)
 
-        fuzzy = find_fuzzy_duplicate(adapter, txn, sure_amount, currency, claimed)
-        if fuzzy
-          claimed << fuzzy.id
-          return true
-        end
+        base = adapter.account.entries
+          .where(entryable_type: "Transaction", amount: sure_amount, currency: currency)
+          .where.not(source: SOURCE)
 
-        false
-      end
+        return true if base.where(date: txn.date).where.not(external_id: nil).exists?
 
-      def find_fuzzy_duplicate(adapter, txn, sure_amount, currency, claimed)
         window = (txn.date - DATE_WINDOW.days)..(txn.date + DATE_WINDOW.days)
-        candidates = adapter.account.entries
-          .where(entryable_type: "Transaction", amount: sure_amount, currency: currency, date: window)
-          .where.not(id: claimed.to_a)
-          .limit(50)
+        manual = base.where(date: window, external_id: nil)
+        return true if manual.where(date: txn.date).exists?
 
         normalized = normalize_name(txn.description)
-        candidates.find do |entry|
-          entry_name = normalize_name(entry.name)
-          fuzzy_names_match?(normalized, entry_name)
+        manual.limit(50).any? do |entry|
+          fuzzy_names_match?(normalized, normalize_name(entry.name))
         end
       end
 
@@ -249,34 +301,33 @@ module CommBankStatement
 
       def print_report(report)
         account_name = report.account&.name || "?"
-        if report.parse_result.nil?
+        if report.skipped_parse.positive?
           log "#{report.path} | #{account_name} | PARSE ERROR: #{report.errors.join(", ")}"
           return
         end
 
-        pr = report.parse_result
-        status = pr.balance_check_passed ? "OK" : "BALANCE FAIL"
+        status = report.balance_check_passed ? "OK" : "BALANCE FAIL"
         log [
           report.path,
           account_name,
-          pr.statement_type,
-          "txns=#{pr.transactions.size}",
+          report.statement_type,
+          "txns=#{report.transaction_count}",
           "import=#{report.imported}",
           "overlap_skip=#{report.skipped_overlap}",
           "dedupe_skip=#{report.skipped_duplicate}",
           status,
-          pr.balance_check_errors.join("; ")
+          report.errors.join("; ")
         ].join(" | ")
       end
 
-      def print_summary(reports)
+      def print_summary(summary)
         log "—"
         log "Mode: #{@apply ? "APPLY" : "DRY RUN"}"
-        log "Statements: #{reports.size}"
-        log "Balance failures: #{reports.count { |r| r.parse_result && !r.parse_result.balance_check_passed }}"
-        log "Would import / imported: #{reports.sum(&:imported)}"
-        log "Skipped (overlap with sync): #{reports.sum(&:skipped_overlap)}"
-        log "Skipped (duplicate): #{reports.sum(&:skipped_duplicate)}"
+        log "Statements: #{summary.statement_count}"
+        log "Balance failures: #{summary.balance_failures}"
+        log "Would import / imported: #{summary.imported_total}"
+        log "Skipped (overlap with sync): #{summary.overlap_skipped_total}"
+        log "Skipped (duplicate): #{summary.duplicate_skipped_total}"
       end
 
       def log(message)

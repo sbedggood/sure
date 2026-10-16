@@ -60,6 +60,33 @@ docker compose exec web bin/rails comm_bank_statement:backfill \
 
 Optional `FAMILY_EMAIL` overrides `family_email` in the YAML.
 
+Batching (low-memory hosts):
+
+```bash
+# Only FY26 everyday PDFs
+ONLY='Tax FY26/My Account Statements/**.pdf' ...
+
+# First 10 files (sorted), then resume with OFFSET
+LIMIT=10 OFFSET=0 ...
+LIMIT=10 OFFSET=10 ...
+```
+
+Apply defers per-account balance sync until each account finishes its statements in the run.
+
+### NetBank CSV gaps (PR #1 `CommBankImport`)
+
+For July 2026 CSV exports before Redbark (`2026-07-20`):
+
+```bash
+docker compose exec web bin/rails comm_bank:import_csv \
+  FILE=/taxes/path/to/export.csv \
+  ACCOUNT_ID=<uuid> \
+  FAMILY_EMAIL=you@example.com \
+  BEFORE=2026-07-20
+```
+
+Rows on or after `BEFORE` are dropped before import; one account sync runs at the end.
+
 ### Behaviour
 
 - Walks `ROOT/**/*.pdf` in sorted order.

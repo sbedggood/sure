@@ -15,7 +15,7 @@ class CommBankStatement::BackfillRunnerErrorTest < ActiveSupport::TestCase
     })
 
     CommBankStatement::Parser.stub(:parse_file, ->(*) { raise "boom" }) do
-      reports = CommBankStatement::BackfillRunner.new(
+      summary = CommBankStatement::BackfillRunner.new(
         family: family,
         root: dir,
         mapping: mapping,
@@ -23,9 +23,9 @@ class CommBankStatement::BackfillRunnerErrorTest < ActiveSupport::TestCase
         stdout: StringIO.new
       ).run
 
-      assert_equal 1, reports.size
-      assert_equal 1, reports.first.skipped_parse
-      assert_match(/boom/, reports.first.errors.first)
+      assert_equal 1, summary.reports.size
+      assert_equal 1, summary.reports.first.skipped_parse
+      assert_match(/boom/, summary.reports.first.errors.first)
     end
   ensure
     FileUtils.rm_rf(dir)

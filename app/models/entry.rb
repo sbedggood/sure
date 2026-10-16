@@ -313,6 +313,8 @@ class Entry < ApplicationRecord
   #
   # @return [void]
   def sync_account_later
+    return if Current.defer_account_syncs
+
     sync_start_date = [ @earliest_saved_date, date_previously_was, date ].compact.min unless destroyed?
     @earliest_saved_date = nil
     account.sync_later(window_start_date: sync_start_date)
