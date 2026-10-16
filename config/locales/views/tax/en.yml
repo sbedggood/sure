@@ -1,0 +1,33 @@
+en:
+  tax:
+    title: "Tax"
+    fy_label: "Financial year"
+    sections:
+      calendar: "Weekly calendar"
+      property: "Property"
+      deductions: "Deductions"
+      documents: "Documents"
+    calendar:
+      saved: "Calendar saved."
+      week_commencing: "Week commencing"
+      wfh_hours: "WFH hours"
+      km_driven: "Km driven"
+      note: "Note"
+      totals: "FY totals"
+      save: "Save calendar"
+    property:
+      allocation: "Your allocation %"
+      marginal_rate: "Marginal tax rate %"
+      save_settings: "Save settings"
+    settings:
+      saved: "Tax settings saved."
+    documents:
+      created: "Document uploaded."
+      deleted: "Document deleted."
+      upload: "Upload document"
+      type: "Type"
+      date: "Date"
+    export: "Download Excel for accountant"
+    deductions:
+      business_use: "Business use %"
+      claim: "Claim"

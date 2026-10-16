@@ -453,6 +453,14 @@ Rails.application.routes.draw do
     get :picker, on: :collection
   end
 
+  namespace :tax do
+    get "dashboard", to: "dashboard#show", as: :dashboard
+    patch "weekly_calendar_entries/bulk", to: "weekly_calendar_entries#bulk_update", as: :weekly_calendar_bulk
+    patch "settings", to: "settings#update", as: :settings
+    resources :documents, only: %i[create show destroy]
+    get "export", to: "exports#show", as: :export
+  end
+
   # Hub page fronting budgets + goals under a single "Plan" nav entry.
   resource :plan, only: :show
 
@@ -796,6 +804,19 @@ Rails.application.routes.draw do
         resources :messages, only: [ :create ] do
           post :retry, on: :collection
         end
+      end
+
+      namespace :tax do
+        get ":start_year/summary", to: "summaries#show", as: :summary
+        get ":start_year/settings", to: "settings#show"
+        patch ":start_year/settings", to: "settings#update"
+        get ":start_year/weekly_calendar_entries", to: "weekly_calendar_entries#index"
+        put ":start_year/weekly_calendar_entries/bulk", to: "weekly_calendar_entries#bulk_update"
+        get ":start_year/documents", to: "documents#index"
+        post ":start_year/documents", to: "documents#create"
+        get ":start_year/documents/:id", to: "documents#show"
+        delete ":start_year/documents/:id", to: "documents#destroy"
+        get ":start_year/export", to: "exports#show", as: :export
       end
 
       get "users/reset/status", to: "users#reset_status"

@@ -17,6 +17,7 @@ en:
         home: Home
         plan: Plan
         reports: Reports
+        tax: Tax
         goals: Goals
         transactions: Transactions
     auth:

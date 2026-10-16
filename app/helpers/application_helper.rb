@@ -125,6 +125,16 @@ module ApplicationHelper
   # the /plan prefix). Everyone else gets exactly the pre-Plan Budgets
   # entry — Goals was already hidden without the flag, so their nav is
   # unchanged.
+  def tax_nav_item
+    {
+      name: t("layouts.application.nav.tax"),
+      path: tax_dashboard_path,
+      icon: "file-text",
+      icon_custom: false,
+      active: request.path.start_with?("/tax")
+    }
+  end
+
   def plan_nav_item
     if preview_features_enabled?
       {

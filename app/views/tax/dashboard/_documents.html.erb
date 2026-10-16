@@ -1,0 +1,46 @@
+<% documents = Current.family.tax_documents.for_year(financial_year.start_year) %>
+
+<%= form_with url: tax_documents_path, method: :post, multipart: true, class: "mb-6 flex flex-wrap gap-3 items-end" do %>
+  <%= hidden_field_tag :start_year, financial_year.start_year %>
+  <div>
+    <label class="text-sm text-secondary"><%= t("tax.documents.type") %></label>
+    <%= select_tag :document_type, options_for_select(TaxDocument::DOCUMENT_TYPES), class: "rounded border border-primary bg-container px-2 py-1" %>
+  </div>
+  <div>
+    <label class="text-sm text-secondary"><%= t("tax.documents.date") %></label>
+    <%= date_field_tag :document_date, nil, class: "rounded border border-primary bg-container px-2 py-1" %>
+  </div>
+  <div>
+    <label class="text-sm text-secondary"><%= t("tax.calendar.note") %></label>
+    <%= text_field_tag :note, nil, class: "rounded border border-primary bg-container px-2 py-1" %>
+  </div>
+  <div>
+    <%= file_field_tag :file, required: true, class: "text-sm text-primary" %>
+  </div>
+  <%= submit_tag t("tax.documents.upload"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
+<% end %>
+
+<ul class="divide-y divide-primary rounded-lg border border-primary">
+  <% documents.each do |doc| %>
+    <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+      <div>
+        <span class="text-primary font-medium"><%= doc.document_type %></span>
+        <% if doc.document_date.present? %>
+          <span class="text-secondary"> — <%= l(doc.document_date) %></span>
+        <% end %>
+        <% if doc.note.present? %>
+          <p class="text-secondary"><%= doc.note %></p>
+        <% end %>
+      </div>
+      <div class="flex gap-3">
+        <% if doc.file.attached? %>
+          <%= link_to "Download", tax_document_path(doc), class: "text-accent" %>
+        <% end %>
+        <%= button_to "Delete", tax_document_path(doc), method: :delete, class: "text-destructive", form: { data: { turbo_confirm: "Delete this document?" } } %>
+      </div>
+    </li>
+  <% end %>
+  <% if documents.empty? %>
+    <li class="px-3 py-4 text-sm text-secondary">No documents for this financial year yet.</li>
+  <% end %>
+</ul>

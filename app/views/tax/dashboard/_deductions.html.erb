@@ -1,0 +1,51 @@
+<% data = summary.as_json[:deductions] %>
+<%= form_with url: tax_settings_path, method: :patch, class: "mb-6 flex flex-wrap gap-4 items-end" do %>
+  <%= hidden_field_tag :start_year, financial_year.start_year %>
+  <%= hidden_field_tag :return_section, "deductions" %>
+  <div>
+    <label class="text-sm text-secondary">WFH rate ($/hr)</label>
+    <%= number_field_tag "tax_fy_setting[wfh_hourly_rate]", settings.wfh_hourly_rate, step: 0.01, class: "rounded border border-primary bg-container px-2 py-1" %>
+  </div>
+  <div>
+    <label class="text-sm text-secondary">Car rate ($/km)</label>
+    <%= number_field_tag "tax_fy_setting[car_rate_per_km]", settings.car_rate_per_km, step: 0.01, class: "rounded border border-primary bg-container px-2 py-1" %>
+  </div>
+  <%= submit_tag t("tax.property.save_settings"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
+<% end %>
+
+<div class="grid gap-4 md:grid-cols-3 mb-6 text-sm">
+  <div class="rounded-lg border border-primary p-3">
+    <p class="text-secondary">D5 Home office</p>
+    <p class="text-primary font-medium"><%= number_to_currency(data[:home_office][:claim]) %></p>
+  </div>
+  <div class="rounded-lg border border-primary p-3">
+    <p class="text-secondary">D1 Car</p>
+    <p class="text-primary font-medium"><%= number_to_currency(data[:car][:claim]) %></p>
+  </div>
+  <div class="rounded-lg border border-primary p-3">
+    <p class="text-secondary">Grand total claim</p>
+    <p class="text-primary font-medium"><%= number_to_currency(data[:grand_total]) %></p>
+  </div>
+</div>
+
+<% data[:tag_lines].each do |line| %>
+  <div class="mb-6">
+    <h2 class="text-sm font-semibold text-primary mb-2"><%= line[:tag] %></h2>
+    <%= form_with url: tax_settings_path, method: :patch, class: "mb-2 flex items-center gap-2" do %>
+      <%= hidden_field_tag :start_year, financial_year.start_year %>
+      <%= hidden_field_tag :return_section, "deductions" %>
+      <label class="text-sm text-secondary"><%= t("tax.deductions.business_use") %></label>
+      <%= number_field_tag "tax_fy_setting[deduction_business_use_percent][#{line[:tag]}]",
+        line[:business_use_percent], step: 0.01, class: "w-20 rounded border border-primary bg-container px-2 py-1" %>
+      <%= submit_tag "Update", class: "text-sm text-accent" %>
+      <span class="text-sm text-secondary">
+        <%= t("tax.deductions.claim") %>: <%= number_to_currency(line[:claim]) %>
+      </span>
+    <% end %>
+    <ul class="text-sm text-secondary list-disc pl-5">
+      <% line[:transactions].each do |txn| %>
+        <li><%= txn[:date] %> — <%= txn[:name] %> (<%= number_to_currency(txn[:amount]) %>)</li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
