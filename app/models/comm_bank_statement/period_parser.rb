@@ -10,7 +10,8 @@ module CommBankStatement
       patterns = [
         /(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*(?:to|–|-)\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i,
         /Statement\s+Period\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*(?:to|-)\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i,
-        /Statement period\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*(?:to|-)\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i
+        /Statement period\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*(?:to|-)\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i,
+        /Statement period\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i
       ]
 
       patterns.each do |pattern|

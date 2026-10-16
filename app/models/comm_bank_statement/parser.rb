@@ -60,7 +60,9 @@ module CommBankStatement
           end
 
           if txs.empty? && !errors.include?("Missing opening or closing balance")
-            errors << "No transactions parsed"
+            quiet_period = result.opening_balance.present? && result.closing_balance.present? &&
+              (result.opening_balance - result.closing_balance).abs <= BigDecimal("0.02")
+            errors << "No transactions parsed" unless quiet_period
           end
 
           if result.statement_type.in?([ :transaction_account, :home_loan ]) && txs.any? &&

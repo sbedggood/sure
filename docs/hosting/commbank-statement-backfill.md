@@ -15,6 +15,7 @@ This is intended for self-hosted Docker setups where tax folders live on the hos
 | Credit card | `Date / Transaction / Amount` (or Transaction Details) | Implemented; basic layout tests only |
 | Home loan / mortgage | Filename or “home loan” in text; uses transaction table parser | Heuristic detection; layouts vary—validate with dry run |
 | CFS managed funds / super | — | **Not supported** (different issuer/format); mapping `skip: true` recommended |
+| Home loan repayment notices (rate/minimum payment letters) | Detected by content | **Skipped automatically** (`SKIP … home_loan_repayment_notice`) |
 
 Always run a **dry run** first and review balance-check results per file.
 

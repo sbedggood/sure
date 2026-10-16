@@ -6,6 +6,7 @@ module CommBankStatement
 
     PAGE_MARKER_RE = /^===== PAGE \d+ =====/
     MARGIN_NOISE_RE = /\A[\d\.\sVLHSZC\*#O\-]+\z/i
+    BARCODE_LINE_RE = /ZZ\d{3}|SL\.(HL|CC|DH)\.|SL\.DH\.|SL\.CC\./i
     TABLE_HEADER_RE = /Date\s+Transaction/i
 
     def normalize(text)
@@ -18,8 +19,13 @@ module CommBankStatement
     def margin_noise_line?(line)
       stripped = line.strip
       return true if stripped.empty?
+      return true if barcode_line?(line)
 
       stripped.length <= 6 && MARGIN_NOISE_RE.match?(stripped)
+    end
+
+    def barcode_line?(line)
+      line.to_s.match?(BARCODE_LINE_RE)
     end
 
     def transaction_table_lines(text)

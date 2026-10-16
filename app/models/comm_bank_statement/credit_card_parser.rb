@@ -2,11 +2,12 @@
 
 module CommBankStatement
   class CreditCardParser
-    TXN_LINE_RE = /^\s*(\d{1,2}\s+[A-Za-z]{3})\s+(.*?)\s+(-?\$?[\d,]+\.\d{2}-?)\s*$/i
+    TXN_LINE_RE = /^\s*(\d{1,2}\s+[A-Za-z]{3})\s+(.*?)\s+(-?\$?[\d,]+(?:[. ]\d{2})-?)\s*$/i
     ROW_START_RE = /^\s*(\d{1,2}\s+[A-Za-z]{3})\s+(.*)$/i
-    OPENING_SUMMARY_RE = /Opening balance at\s+\d{1,2}\s+[A-Za-z]{3}\s+\$?([\d,]+\.\d{2})/i
-    CLOSING_SUMMARY_RE = /Closing balance at\s+\d{1,2}\s+[A-Za-z]{3}\s+\$?([\d,]+\.\d{2})/i
+    OPENING_SUMMARY_RE = /Opening balance at\s+\d{1,2}\s+[A-Za-z]{3}\s+\$?([\d,]+(?:[. ]\d{2}))/i
+    CLOSING_SUMMARY_RE = /Closing balance at\s+\d{1,2}\s+[A-Za-z]{3}\s+\$?([\d,]+(?:[. ]\d{2}))/i
     SKIP_LINE_RE = /Awards (transaction details|points summary|membership number)/i
+    INTEREST_FOOTER_RE = /Interest charged on .+?\s+([\d,]+(?:[. ]\d{2}))\s*$/i
 
     def initialize(text)
       @text = text
@@ -32,6 +33,7 @@ module CommBankStatement
         next if stripped.match?(/^Amount\s*\(A\$\)/i)
         next if stripped.match?(/^Transactions$/i)
         next if stripped.match?(/^##\s/)
+        next if stripped.match?(/^Please check your transactions listed/i)
 
         if ROW_START_RE.match?(line)
           txn = build_from_buffer(buffer, year: year, prev_date: prev_date)
@@ -48,6 +50,8 @@ module CommBankStatement
 
       txn = build_from_buffer(buffer, year: year, prev_date: prev_date)
       transactions << txn if txn
+
+      append_interest_footer_transactions!(transactions, period: period)
 
       ParseResult.new(
         statement_type: :credit_card,
@@ -84,6 +88,30 @@ module CommBankStatement
           balance: nil,
           raw_lines: buffer
         )
+      end
+
+      def append_interest_footer_transactions!(transactions, period:)
+        date = period&.end_on || transactions.last&.date
+        return unless date
+
+        @text.each_line do |line|
+          next unless line.match?(INTEREST_FOOTER_RE)
+
+          match = line.match(INTEREST_FOOTER_RE)
+          amount = AmountParser.parse_money(match[1])
+          next if amount.nil? || amount.zero?
+
+          description = line.strip.squeeze(" ")
+          next if transactions.any? { |txn| txn.description == description && txn.amount == amount }
+
+          transactions << CommBankStatement::StatementLine.new(
+            date: date,
+            description: description,
+            amount: amount,
+            balance: nil,
+            raw_lines: [ line.strip ]
+          )
+        end
       end
 
       def extract_summary_amount(pattern)

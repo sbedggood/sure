@@ -54,6 +54,12 @@ module CommBankStatement
           reports << StatementReport.new(path: relative, account: account, parse_result: nil,
             imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1, errors: [ e.message ])
           next
+        rescue StandardError => e
+          log "ERROR #{relative} | #{e.class}: #{e.message}"
+          reports << StatementReport.new(path: relative, account: account, parse_result: nil,
+            imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1,
+            errors: [ "#{e.class}: #{e.message}" ])
+          next
         end
 
         report = process_statement(path, relative, account, parse_result)

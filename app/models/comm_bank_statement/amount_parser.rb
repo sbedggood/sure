@@ -4,7 +4,7 @@ module CommBankStatement
   module AmountParser
     module_function
 
-    # Parses "$1,234.56 CR", "250.00 DR", "Nil", bare "$12.34"
+    # Parses "$1,234.56 CR", "250.00 DR", "$12,199 39", bare "$12.34"
     def parse_balance(value)
       return nil if value.blank?
 
@@ -30,11 +30,10 @@ module CommBankStatement
       end
     end
 
-    # Debit/credit column cell: "$63.20" or empty
     def parse_money(value)
       return nil if value.blank?
 
-      cleaned = value.to_s.strip
+      cleaned = normalize_money_token(value.to_s.strip)
       trailing_negative = cleaned.end_with?("-")
       cleaned = cleaned.delete_suffix("-")
       cleaned = cleaned.delete_prefix("$").delete_prefix("A$").gsub(",", "").strip
@@ -44,7 +43,14 @@ module CommBankStatement
       trailing_negative ? -amount.abs : amount
     end
 
-    # Signed movement from debit/credit columns (asset account convention).
+    def normalize_money_token(value)
+      token = value.dup
+      if token.match?(/^-?\$?[\d,]+\s+\d{2}-?$/)
+        token = token.sub(/\s+(\d{2})(-?)$/, '.\1\2')
+      end
+      token
+    end
+
     def signed_from_debit_credit(debit, credit)
       debit_amt = parse_money(debit)
       credit_amt = parse_money(credit)

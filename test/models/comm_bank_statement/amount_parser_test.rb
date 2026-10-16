@@ -16,4 +16,8 @@ class CommBankStatement::AmountParserTest < ActiveSupport::TestCase
   test "parse_money treats trailing minus as credit card payment" do
     assert_equal BigDecimal("-8141.93"), CommBankStatement::AmountParser.parse_money("8,141.93-")
   end
+
+  test "parse_money treats space as decimal separator" do
+    assert_equal BigDecimal("12199.39"), CommBankStatement::AmountParser.parse_money("$12,199 39")
+  end
 end

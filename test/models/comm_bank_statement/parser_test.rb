@@ -47,4 +47,28 @@ class CommBankStatement::ParserTest < ActiveSupport::TestCase
 
     refute_equal :home_loan, CommBankStatement::Parser.detect_type(text, filename: "everyday.pdf")
   end
+
+  test "parses fy26 credit card space decimal amounts" do
+    text = file_fixture("commbank_statements/fy26_card_space_decimal.txt").read
+    result = CommBankStatement::Parser.parse_text(text, filename: "card.pdf")
+
+    assert result.balance_check_passed, result.balance_check_errors.inspect
+    assert_equal 2, result.transactions.size
+  end
+
+  test "home loan quiet period with no movements passes balance check" do
+    text = file_fixture("commbank_statements/home_loan_quiet_period.txt").read
+    result = CommBankStatement::Parser.parse_text(text, filename: "loan.pdf")
+
+    assert result.balance_check_passed, result.balance_check_errors.inspect
+    assert_equal 0, result.transactions.size
+  end
+
+  test "credit card interest footer lines are included" do
+    text = file_fixture("commbank_statements/credit_card_interest_footer.txt").read
+    result = CommBankStatement::Parser.parse_text(text, filename: "card.pdf")
+
+    assert result.balance_check_passed, result.balance_check_errors.inspect
+    assert_equal 2, result.transactions.size
+  end
 end

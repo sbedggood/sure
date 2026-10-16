@@ -1,0 +1,10 @@
+Ultimate Awards Credit Card
+Statement Period 10 Jun 2026 - 8 Jul 2026
+
+Opening balance at 10 Jun                            $500 00
+Closing balance at 8 Jul                             $650 00
+
+Transactions
+Date       Transaction details                                                                                                   Amount (A$)
+10 Jun     SAMPLE MERCHANT                                                                                                             350 00
+20 Jun     PAYMENT RECEIVED                                                                                                          200 00-

@@ -1,0 +1,8 @@
+Statement Period 9 Oct 2021 - 9 Nov 2021
+Opening balance at 9 Oct                           $100.00
+Closing balance at 9 Nov                           $100.36
+
+Transactions
+Date      Transaction details                                                                               Amount (A$)
+09 Nov    Monthly Fee Waived                                                                                     0.00
+          Interest charged on cash advances                              Cash Advance Rate 21.240%p.a.                               0.36
