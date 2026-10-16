@@ -93,7 +93,7 @@ Rows on or after `BEFORE` are dropped before import; one account sync runs at th
 - Maps each file to an account via `File.fnmatch` rules in the YAML (`**` globs supported).
 - Parses the PDF, validates **opening + sum(movements) = closing** (and per-row running balance for transaction accounts).
 - Imports only rows with `date < cutoff`, where cutoff is per-account `accounts.<uuid>.before_date`, global `before_date` in YAML, or the earliest `source: redbark` entry on that account.
-- Dedupes against existing entries (±3 days, same amount, fuzzy description) so re-runs are safe.
+- Dedupes against **Redbark** (exact date and amount, one statement row per existing entry) and **manual** rows (exact date, amount, fuzzy name). Ignores other `commbank_statement` imports. Re-runs are idempotent via `external_id` (statement path, date, amount, description, **nth occurrence** of that tuple within the PDF, plus balance/raw fingerprint). Each skipped row logs `SKIP_ROW` with reason: `overlap_cutoff`, `idempotent_external_id`, `redbark_match`, or `manual_match`.
 - With `APPLY=1`, creates entries with `source: commbank_statement` and stores the PDF via `AccountStatement` (vault), including period and balances when parsed.
 
 ## Using your fork instead of the stable image

@@ -113,6 +113,46 @@ class CommBankStatement::BackfillRunnerTest < ActiveSupport::TestCase
     assert_equal 2, @account.entries.where(source: "commbank_statement").count
   end
 
+  test "apply imports two identical credit card lines on the same date" do
+    card = accounts(:credit_card)
+    card.update!(currency: "AUD")
+
+    text = <<~TEXT
+      Ultimate Awards Credit Card
+      Statement Period 1 Jan 2024 - 31 Jan 2024
+      Opening balance at 1 Jan                   $100.00
+      Closing balance at 31 Jan                   $109.00
+
+      Transactions
+      Date      Transaction details                                                                               Amount (A$)
+
+      09 Jan    COFFEE SHOP BRISBANE                                                                                4.50
+      09 Jan    COFFEE SHOP BRISBANE                                                                                4.50
+    TEXT
+
+    parse_result = CommBankStatement::Parser.parse_text(text, filename: "credit_card.pdf")
+    File.write(@dir.join("card.pdf"), file_fixture("imports/sample_bank_statement.pdf").read)
+    mapping = CommBankStatement::Mapping.new({
+      "before_date" => "2026-01-01",
+      "rules" => [ { "pattern" => "**/*.pdf", "account_id" => card.id } ]
+    })
+
+    summary = nil
+    CommBankStatement::Parser.stub(:parse_file, parse_result) do
+      summary = CommBankStatement::BackfillRunner.new(
+        family: @family,
+        root: @dir,
+        mapping: mapping,
+        apply: true,
+        stdout: StringIO.new
+      ).run
+    end
+
+    assert_equal 2, summary.reports.first.imported
+    external_ids = card.entries.where(source: "commbank_statement").pluck(:external_id)
+    assert_equal 2, external_ids.uniq.size
+  end
+
   test "dedupes against redbark but not other commbank_statement rows" do
     create_transaction(
       account: @account,
