@@ -92,7 +92,7 @@ Rows on or after `BEFORE` are dropped before import; one account sync runs at th
 - Walks `ROOT/**/*.pdf` in sorted order.
 - Maps each file to an account via `File.fnmatch` rules in the YAML (`**` globs supported).
 - Parses the PDF, validates **opening + sum(movements) = closing** (and per-row running balance for transaction accounts).
-- Imports only rows with `date < cutoff`, where cutoff is `before_date` from YAML or the earliest `source: redbark` entry on that account.
+- Imports only rows with `date < cutoff`, where cutoff is per-account `accounts.<uuid>.before_date`, global `before_date` in YAML, or the earliest `source: redbark` entry on that account.
 - Dedupes against existing entries (±3 days, same amount, fuzzy description) so re-runs are safe.
 - With `APPLY=1`, creates entries with `source: commbank_statement` and stores the PDF via `AccountStatement` (vault), including period and balances when parsed.
 

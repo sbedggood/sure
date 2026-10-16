@@ -5,8 +5,8 @@ require "digest"
 module CommBankStatement
   class BackfillRunner
     SOURCE = "commbank_statement"
-    DATE_WINDOW = 3
     FUZZY_NAME_THRESHOLD = 0.55
+    DEDUPE_PROVIDER_SOURCES = %w[redbark].freeze
 
     StatementReport = Data.define(
       :path, :account, :statement_type, :transaction_count, :imported, :skipped_overlap,
@@ -119,11 +119,14 @@ module CommBankStatement
 
         cutoff = cutoff_date_for(account)
         adapter = Account::ProviderImportAdapter.new(account)
+        claimed_dedupe_entry_ids = Set.new
 
         if @apply
           ActiveRecord::Base.transaction do
             parse_result.transactions.each do |txn|
-              outcome = classify_transaction(txn, account, adapter, cutoff, relative)
+              outcome = classify_transaction(
+                txn, account, adapter, cutoff, relative, claimed_dedupe_entry_ids: claimed_dedupe_entry_ids
+              )
               case outcome
               when :overlap then skipped_overlap += 1
               when :duplicate then skipped_duplicate += 1
@@ -137,7 +140,9 @@ module CommBankStatement
           end
         else
           parse_result.transactions.each do |txn|
-            outcome = classify_transaction(txn, account, adapter, cutoff, relative)
+            outcome = classify_transaction(
+              txn, account, adapter, cutoff, relative, claimed_dedupe_entry_ids: claimed_dedupe_entry_ids
+            )
             case outcome
             when :overlap then skipped_overlap += 1
             when :duplicate then skipped_duplicate += 1
@@ -161,11 +166,13 @@ module CommBankStatement
         )
       end
 
-      def classify_transaction(txn, account, adapter, cutoff, relative)
+      def classify_transaction(txn, account, adapter, cutoff, relative, claimed_dedupe_entry_ids:)
         return :overlap if txn.date >= cutoff
 
         sure_amount = EntryAmountConverter.to_sure_amount(txn.amount, account)
-        return :duplicate if duplicate?(adapter, account, txn, sure_amount, account.currency)
+        if duplicate?(account, txn, sure_amount, account.currency, relative, claimed_dedupe_entry_ids: claimed_dedupe_entry_ids)
+          return :duplicate
+        end
 
         :import
       end
@@ -173,7 +180,7 @@ module CommBankStatement
       def import_transaction!(adapter, account, txn, relative)
         sure_amount = EntryAmountConverter.to_sure_amount(txn.amount, account)
         adapter.import_transaction(
-          external_id: external_id_for(account, txn, sure_amount),
+          external_id: external_id_for(account, txn, sure_amount, relative),
           amount: sure_amount,
           currency: account.currency,
           date: txn.date,
@@ -247,32 +254,61 @@ module CommBankStatement
       end
 
       def cutoff_date_for(account)
-        if @mapping.before_date.present?
-          return Date.parse(@mapping.before_date.to_s)
+        raw = @mapping.before_date_for(account.id)
+        if raw.present?
+          return Date.parse(raw.to_s)
         end
 
         earliest = account.entries.where(source: "redbark").minimum(:date)
         earliest&.to_date || Date.current
       end
 
-      def duplicate?(adapter, account, txn, sure_amount, currency)
-        external_id = external_id_for(account, txn, sure_amount)
+      def duplicate?(account, txn, sure_amount, currency, relative, claimed_dedupe_entry_ids:)
+        external_id = external_id_for(account, txn, sure_amount, relative)
         return true if account.entries.exists?(external_id: external_id, source: SOURCE)
 
-        base = adapter.account.entries
-          .where(entryable_type: "Transaction", amount: sure_amount, currency: currency)
-          .where.not(source: SOURCE)
+        match = claimable_dedupe_entry(
+          account: account,
+          date: txn.date,
+          amount: sure_amount,
+          currency: currency,
+          description: txn.description,
+          claimed_dedupe_entry_ids: claimed_dedupe_entry_ids
+        )
+        return false unless match
 
-        return true if base.where(date: txn.date).where.not(external_id: nil).exists?
+        claimed_dedupe_entry_ids << match.id
+        true
+      end
 
-        window = (txn.date - DATE_WINDOW.days)..(txn.date + DATE_WINDOW.days)
-        manual = base.where(date: window, external_id: nil)
-        return true if manual.where(date: txn.date).exists?
+      def claimable_dedupe_entry(account:, date:, amount:, currency:, description:, claimed_dedupe_entry_ids:)
+        candidates = account.entries
+          .where(entryable_type: "Transaction", amount: amount, currency: currency, date: date)
+          .where.not(id: claimed_dedupe_entry_ids.to_a)
+          .order(:created_at)
+          .to_a
+          .reject { |entry| statement_backfill_entry?(entry) }
 
-        normalized = normalize_name(txn.description)
-        manual.limit(50).any? do |entry|
-          fuzzy_names_match?(normalized, normalize_name(entry.name))
+        provider = candidates.find do |entry|
+          entry.source.in?(DEDUPE_PROVIDER_SOURCES) && entry.external_id.present?
         end
+        return provider if provider
+
+        normalized = normalize_name(description)
+        candidates.find do |entry|
+          entry.external_id.blank? && manual_entry_source?(entry) &&
+            fuzzy_names_match?(normalized, normalize_name(entry.name))
+        end
+      end
+
+      def statement_backfill_entry?(entry)
+        return true if entry.source == SOURCE
+
+        entry.entryable.is_a?(Transaction) && entry.transaction.extra.to_h.key?("commbank_statement")
+      end
+
+      def manual_entry_source?(entry)
+        entry.source.blank?
       end
 
       def fuzzy_names_match?(left, right)
@@ -292,11 +328,29 @@ module CommBankStatement
         RecurringTransaction::Matcher.normalize_name(name)
       end
 
-      def external_id_for(account, txn, sure_amount)
+      def external_id_for(account, txn, sure_amount, relative)
+        fingerprint = transaction_fingerprint(txn)
         digest = Digest::SHA256.hexdigest(
-          [ account.id, txn.date, sure_amount, normalize_name(txn.description) ].join("|")
+          [
+            account.id,
+            relative,
+            txn.date,
+            sure_amount,
+            normalize_name(txn.description),
+            fingerprint
+          ].join("|")
         )
         "commbank_pdf_#{digest[0, 32]}"
+      end
+
+      def transaction_fingerprint(txn)
+        if txn.balance.present?
+          txn.balance.to_s("F")
+        elsif txn.raw_lines.present?
+          Digest::SHA256.hexdigest(txn.raw_lines.map(&:strip).join("\n"))[0, 16]
+        else
+          Digest::SHA256.hexdigest(txn.raw_lines.to_s)[0, 16]
+        end
       end
 
       def print_report(report)

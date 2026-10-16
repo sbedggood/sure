@@ -3,8 +3,13 @@
 
 family_email: stephen@example.com
 
-# Optional: import only transactions strictly before this date (overrides Redbark earliest date).
+# Optional: transactions on or after this date are overlap-skipped (overrides Redbark earliest date).
 # before_date: 2024-01-01
+
+# Optional per-account cutoff (account UUID → before_date). Overrides global before_date for that account.
+# accounts:
+#   "00000000-0000-0000-0000-000000000003":
+#     before_date: 2026-07-20
 
 rules:
   # Tax folder layout

@@ -29,6 +29,19 @@ module CommBankStatement
       @data["before_date"]
     end
 
+    # Per-account cutoff overrides global `before_date`. Keys are account UUID strings.
+    def before_date_for(account_id)
+      accounts = @data["accounts"]
+      if accounts.is_a?(Hash)
+        entry = accounts[account_id.to_s] || accounts[account_id]
+        if entry.is_a?(Hash) && entry["before_date"].present?
+          return entry["before_date"]
+        end
+      end
+
+      before_date
+    end
+
     def match_account_id(relative_path)
       @rules.each do |rule|
         next unless File.fnmatch(rule.pattern, relative_path, File::FNM_PATHNAME | File::FNM_EXTGLOB)
