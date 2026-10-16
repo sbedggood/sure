@@ -5,6 +5,7 @@ require "test_helper"
 class CommBankStatement::AmountParserTest < ActiveSupport::TestCase
   test "parse_balance handles CR and DR suffixes" do
     assert_equal BigDecimal("1000"), CommBankStatement::AmountParser.parse_balance("$1,000.00 CR")
+    assert_equal BigDecimal("1254.1"), CommBankStatement::AmountParser.parse_balance("1,254.10 CR")
     assert_equal BigDecimal("-50"), CommBankStatement::AmountParser.parse_balance("50.00 DR")
   end
 

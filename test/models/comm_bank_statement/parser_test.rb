@@ -64,6 +64,16 @@ class CommBankStatement::ParserTest < ActiveSupport::TestCase
     assert_equal 0, result.transactions.size
   end
 
+  test "parses fy26 everyday balances without dollar sign" do
+    text = file_fixture("commbank_statements/fy26_everyday_no_dollar.txt").read
+    result = CommBankStatement::Parser.parse_text(text, filename: "everyday.pdf")
+
+    assert result.balance_check_passed, result.balance_check_errors.inspect
+    assert_equal 2, result.transactions.size
+    assert_equal BigDecimal("1000"), result.opening_balance
+    assert_equal BigDecimal("816.8"), result.closing_balance
+  end
+
   test "credit card interest footer lines are included" do
     text = file_fixture("commbank_statements/credit_card_interest_footer.txt").read
     result = CommBankStatement::Parser.parse_text(text, filename: "card.pdf")

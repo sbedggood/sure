@@ -4,7 +4,7 @@ module CommBankStatement
   # Parses CommBank PDF tables with running balances (CR asset accounts, DR loans).
   class BalancedTableParser
     ROW_START_RE = /^\s*(\d{1,2}\s+[A-Za-z]{3}(?:\s+\d{4})?)\s+(.*)$/
-    BALANCE_RE = /\$([\d,]+(?:[. ]\d{2}))\s*(CR|DR)\b/i
+    BALANCE_RE = AmountParser::BALANCE_AMOUNT_SUFFIX_RE
     OPENING_RE = /OPENING\s+BALANCE/i
     CLOSING_RE = /CLOSING\s+BALANCE/i
     HOME_OPENING_RE = /Opening balance/i
@@ -113,7 +113,7 @@ module CommBankStatement
         return nil if balance_matches.empty?
 
         amount_str, suffix = balance_matches.last
-        balance = AmountParser.parse_balance("$#{amount_str} #{suffix}")
+        balance = AmountParser.parse_balance("#{amount_str} #{suffix}")
 
         date_token = row_match[1]
         description = strip_amount_columns(row_match[2].strip)

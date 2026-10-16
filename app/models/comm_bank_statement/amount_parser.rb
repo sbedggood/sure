@@ -2,9 +2,12 @@
 
 module CommBankStatement
   module AmountParser
+    # Optional $ before amount (FY26 everyday/savings drop the dollar sign on balances).
+    BALANCE_AMOUNT_SUFFIX_RE = /(?:\$)?([\d,]+(?:[. ]\d{2}))\s*(CR|DR)\b/i
+
     module_function
 
-    # Parses "$1,234.56 CR", "250.00 DR", "$12,199 39", bare "$12.34"
+    # Parses "$1,234.56 CR", "1,254.10 CR", "250.00 DR", "$12,199 39", bare "$12.34"
     def parse_balance(value)
       return nil if value.blank?
 
