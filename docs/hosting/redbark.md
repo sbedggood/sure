@@ -41,6 +41,16 @@ REDBARK_INCLUDE_PENDING=true
 
 When a pending transaction settles, the posted version replaces it automatically.
 
+## CommBank CSV fallback (NetBank export)
+
+If you prefer not to use open banking, or need history Redbark cannot reach, you can import a **NetBank CSV** export into a manual or Redbark-linked account:
+
+1. In NetBank, open the account and use **Export** (or Advanced search, then Export) and choose **CSV**.
+2. In Sure, go to **Import** and choose **Import CommBank NetBank CSV**.
+3. Select the account to import into and upload the file.
+
+NetBank’s default CSV has **no header row** (date, amount, description, balance). Sure injects the expected column names automatically. Amounts stay signed as NetBank exports them (debits negative, credits positive), and re-importing the same period deduplicates against existing transactions on that account.
+
 ## Troubleshooting
 
 **Connection requires update**

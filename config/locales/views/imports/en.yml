@@ -423,6 +423,7 @@ en:
       tab_financial_tools: Financial Tools & Files
       tab_raw_data: Raw Data
       import_ynab: Import from YNAB
+      import_commbank: Import CommBank NetBank CSV
       import_accounts: Import accounts
       import_categories: Import categories
       import_merchants: Import merchants
