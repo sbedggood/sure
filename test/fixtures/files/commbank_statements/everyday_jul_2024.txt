@@ -1,0 +1,38 @@
+Commonwealth Bank of Australia
+Smart Access
+Statement period 1 Jul 2024 to 31 Jul 2024
+
+Date
+Transaction
+Debit
+Credit
+Balance
+
+15 Jul
+2024 OPENING BALANCE
+$1,000.00 CR
+
+15 Jul
+COLES 0663 ALTONA
+63.20
+
+$936.80
+CR
+
+21 Jul
+Transfer To J SMITH PayID
+120.00
+
+$816.80
+CR
+
+31 Jul
+CREDIT INTEREST EARNED
+0.84
+$817.64
+CR
+
+31 Jul
+CLOSING BALANCE
+$817.64
+CR
