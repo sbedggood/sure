@@ -14,7 +14,7 @@ class Tax::ExcelExporterTest < ActiveSupport::TestCase
     names = package.workbook.worksheets.map(&:name)
 
     assert names.any? { |n| n.start_with?("Property FY") }
-    assert_includes names, "FY23"
+    assert_includes names, "FY24"
     assert names.any? { |n| n.start_with?("Expenses FY") }
     assert names.any? { |n| n.include?("Calendar") }
   end

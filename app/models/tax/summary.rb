@@ -14,6 +14,7 @@ module Tax
     def as_json
       {
         start_year: financial_year.start_year,
+        end_year: financial_year.end_year,
         label: financial_year.label,
         start_on: financial_year.start_on,
         end_on: financial_year.end_on,

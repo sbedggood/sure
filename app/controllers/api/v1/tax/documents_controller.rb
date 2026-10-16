@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-class Api::V1::Tax::DocumentsController < Api::V1::BaseController
+class Api::V1::Tax::DocumentsController < Api::V1::Tax::BaseController
   before_action -> { authorize_scope!(:read) }, only: %i[index show]
   before_action -> { authorize_scope!(:read_write) }, only: %i[create destroy]
   before_action :set_document, only: %i[show destroy]
 
   def index
-    documents = family.tax_documents.for_year(params[:start_year])
+    documents = family.tax_documents.for_year(tax_start_year)
     render json: documents.map { |doc| document_json(doc) }
   end
 
@@ -20,7 +20,7 @@ class Api::V1::Tax::DocumentsController < Api::V1::BaseController
 
   def create
     document = family.tax_documents.new(
-      start_year: params.require(:start_year).to_i,
+      start_year: tax_start_year,
       document_type: params.require(:document_type),
       document_date: params[:document_date],
       note: params[:note]

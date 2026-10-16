@@ -1,7 +1,7 @@
 en:
   tax:
     title: "Tax"
-    fy_label: "Financial year"
+    fy_label: "Financial year (ATO)"
     sections:
       calendar: "Weekly calendar"
       property: "Property"

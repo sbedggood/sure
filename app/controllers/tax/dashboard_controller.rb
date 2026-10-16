@@ -2,6 +2,8 @@
 
 module Tax
   class DashboardController < ApplicationController
+    include Tax::StartYearFromParams
+
     before_action :set_financial_year
     before_action :set_settings
 
@@ -15,8 +17,7 @@ module Tax
     private
 
       def set_financial_year
-        start_year = params[:start_year].presence || Tax::FinancialYear.current_start_year
-        @financial_year = Tax::FinancialYear.new(start_year)
+        @financial_year = Tax::FinancialYear.new(tax_start_year_from_params)
       end
 
       def set_settings
@@ -42,7 +43,7 @@ module Tax
         current = Tax::FinancialYear.current_start_year
         (current - 5..current).map do |year|
           fy = Tax::FinancialYear.new(year)
-          [ fy.label, year ]
+          [ "#{fy.label} (#{fy.start_on.year}–#{fy.end_on.year})", year ]
         end.reverse
       end
   end

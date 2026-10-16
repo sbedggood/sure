@@ -13,6 +13,20 @@ class Tax::FinancialYearTest < ActiveSupport::TestCase
     assert_equal BigDecimal("0.70"), Tax::FinancialYear.new(2024).default_wfh_hourly_rate
   end
 
+  test "labels use ATO end year" do
+    assert_equal "FY24", Tax::FinancialYear.label_for(2023)
+    assert_equal "FY25", Tax::FinancialYear.new(2024).label
+    assert_equal 2025, Tax::FinancialYear.new(2024).end_year
+  end
+
+  test "resolve_start_year accepts fy end year" do
+    assert_equal 2024, Tax::FinancialYear.resolve_start_year(fy: 25)
+    assert_equal 2024, Tax::FinancialYear.resolve_start_year(fy: 2025)
+    assert_equal 2024, Tax::FinancialYear.resolve_start_year(fy: "FY25")
+    assert_equal 2024, Tax::FinancialYear.resolve_start_year(start_year: 25)
+    assert_equal 2023, Tax::FinancialYear.resolve_start_year(start_year: 2023)
+  end
+
   test "weeks start on mondays within range" do
     weeks = Tax::FinancialYear.new(2023).week_commencing_dates
     assert weeks.all?(&:monday?)

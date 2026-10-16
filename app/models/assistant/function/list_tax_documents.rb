@@ -7,24 +7,36 @@ class Assistant::Function::ListTaxDocuments < Assistant::Function
     end
 
     def description
-      "Lists tax document metadata for a financial year (not file bytes)."
+      <<~DESC.squish
+        Lists tax document metadata for a financial year (not file bytes).
+        Use start_year (July year) or fy (ATO end year, e.g. 25 for FY25).
+      DESC
     end
+  end
+
+  def strict_mode?
+    false
   end
 
   def params_schema
     build_schema(
-      required: [ "start_year" ],
       properties: {
-        start_year: { type: "integer" }
+        start_year: { type: "integer", description: "July-start year (e.g. 2024 for FY25)." },
+        fy: { type: [ "integer", "string" ], description: "ATO end year (e.g. 25 or 2025)." }
       }
     )
   end
 
   def call(params = {})
-    start_year = params["start_year"].to_i
+    start_year = Tax::YearParams.resolve_from_tool_params(params)
+    return error("invalid_year", "Provide start_year or fy.") unless start_year
+
     docs = user.family.tax_documents.for_year(start_year)
+    fy = Tax::FinancialYear.new(start_year)
     {
       success: true,
+      label: fy.label,
+      start_year: start_year,
       documents: docs.map { |doc|
         {
           id: doc.id,

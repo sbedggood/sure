@@ -7,7 +7,10 @@ class Assistant::Function::UpsertTaxCalendar < Assistant::Function
     end
 
     def description
-      "Bulk upsert weekly tax calendar rows (WFH hours, km driven, note) for an Australian financial year."
+      <<~DESC.squish
+        Bulk upsert weekly tax calendar rows (WFH hours, km driven, note) for an Australian financial year.
+        Use start_year (July year) or fy (ATO end year, e.g. 25 for FY25).
+      DESC
     end
   end
 
@@ -17,9 +20,10 @@ class Assistant::Function::UpsertTaxCalendar < Assistant::Function
 
   def params_schema
     build_schema(
-      required: %w[start_year entries],
+      required: %w[entries],
       properties: {
-        start_year: { type: "integer" },
+        start_year: { type: "integer", description: "July-start year (e.g. 2024 for FY25)." },
+        fy: { type: [ "integer", "string" ], description: "ATO end year (e.g. 25 or 2025)." },
         entries: {
           type: "array",
           items: {
@@ -38,7 +42,9 @@ class Assistant::Function::UpsertTaxCalendar < Assistant::Function
   end
 
   def call(params = {})
-    start_year = params["start_year"].to_i
+    start_year = Tax::YearParams.resolve_from_tool_params(params)
+    return error("invalid_year", "Provide start_year or fy.") unless start_year
+
     fy = Tax::FinancialYear.new(start_year)
     family = user.family
     rows = Array(params["entries"])
@@ -62,6 +68,6 @@ class Assistant::Function::UpsertTaxCalendar < Assistant::Function
     end
 
     entries = family.tax_weekly_calendar_entries.for_year(start_year)
-    { success: true, count: entries.count }
+    { success: true, label: fy.label, start_year: start_year, count: entries.count }
   end
 end

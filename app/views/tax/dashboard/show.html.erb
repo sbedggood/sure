@@ -2,7 +2,12 @@
 
 <div class="flex flex-col gap-6 p-4 lg:p-6">
   <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-    <h1 class="text-xl font-semibold text-primary"><%= t("tax.title") %></h1>
+    <h1 class="text-xl font-semibold text-primary">
+      <%= t("tax.title") %> — <%= @financial_year.label %>
+      <span class="text-sm font-normal text-secondary">
+        (<%= l(@financial_year.start_on, format: :long) %> – <%= l(@financial_year.end_on, format: :long) %>)
+      </span>
+    </h1>
     <div class="flex flex-wrap items-center gap-3">
       <%= form_with url: tax_dashboard_path, method: :get, class: "flex items-center gap-2" do %>
         <label class="text-sm text-secondary" for="start_year"><%= t("tax.fy_label") %></label>
@@ -12,6 +17,7 @@
           onchange: "this.form.submit()" %>
         <%= hidden_field_tag :section, @section %>
       <% end %>
+      <span class="text-xs text-secondary">or <code>?fy=25</code></span>
       <%= link_to t("tax.export"),
         tax_export_path(start_year: @financial_year.start_year),
         class: "text-sm font-medium text-accent" %>

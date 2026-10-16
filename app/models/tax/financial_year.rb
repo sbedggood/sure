@@ -8,13 +8,51 @@ module Tax
       on.month >= 7 ? on.year : on.year - 1
     end
 
+    # ATO labels a financial year by its ending year (Jul 2024–Jun 2025 → FY25).
+    def self.end_year_for_start_year(start_year)
+      start_year.to_i + 1
+    end
+
     def self.label_for(start_year)
-      short = (start_year % 100)
+      short = end_year_for_start_year(start_year) % 100
       "FY#{short.to_s.rjust(2, "0")}"
+    end
+
+    # Accept Jul-year `start_year`, or ATO end-year via `fy` (25, 2025, FY25).
+    def self.resolve_start_year(start_year: nil, fy: nil)
+      return parse_fy_to_start_year(fy) if fy.present?
+
+      return nil if start_year.blank?
+
+      sy = start_year.to_i
+      return parse_fy_to_start_year(sy) if sy.positive? && sy < 100
+
+      sy.positive? ? sy : nil
+    end
+
+    def self.parse_fy_to_start_year(value)
+      end_year = parse_fy_end_year(value)
+      return nil unless end_year
+
+      end_year - 1
+    end
+
+    def self.parse_fy_end_year(value)
+      raw = value.to_s.strip.upcase.delete_prefix("FY")
+      return nil if raw.blank?
+
+      n = raw.to_i
+      return nil unless n.positive?
+
+      n < 100 ? 2000 + n : n
     end
 
     def initialize(start_year)
       @start_year = start_year.to_i
+    end
+
+    def end_year
+      self.class.end_year_for_start_year(start_year)
     end
 
     def label
@@ -26,7 +64,7 @@ module Tax
     end
 
     def end_on
-      Date.new(start_year + 1, 6, 30)
+      Date.new(end_year, 6, 30)
     end
 
     def range

@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
-class Api::V1::Tax::SettingsController < Api::V1::BaseController
+class Api::V1::Tax::SettingsController < Api::V1::Tax::BaseController
   before_action -> { authorize_scope!(:read) }, only: :show
   before_action -> { authorize_scope!(:read_write) }, only: :update
 
   def show
-    settings = TaxFySetting.find_or_initialize_for!(family: family, start_year: params[:start_year])
+    settings = TaxFySetting.find_or_initialize_for!(family: family, start_year: tax_start_year)
     settings.save! if settings.new_record?
     render json: settings_json(settings)
   end
 
   def update
-    settings = TaxFySetting.find_or_initialize_for!(family: family, start_year: params[:start_year])
+    settings = TaxFySetting.find_or_initialize_for!(family: family, start_year: tax_start_year)
     settings.update!(settings_params)
     render json: settings_json(settings)
   end

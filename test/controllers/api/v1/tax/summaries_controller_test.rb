@@ -25,8 +25,19 @@ class Api::V1::Tax::SummariesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     body = JSON.parse(response.body)
     assert_equal @start_year, body["start_year"]
+    assert_equal "FY24", body["label"]
+    assert_equal 2024, body["end_year"]
     assert body.key?("property")
     assert body.key?("deductions")
+  end
+
+  test "summary accepts fy path shorthand for end year" do
+    get "/api/v1/tax/25/summary", headers: { "Authorization" => "Bearer #{@read_token.token}" }
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert_equal 2024, body["start_year"]
+    assert_equal "FY25", body["label"]
   end
 
   test "requires authentication" do

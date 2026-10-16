@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-class Api::V1::Tax::WeeklyCalendarEntriesController < Api::V1::BaseController
+class Api::V1::Tax::WeeklyCalendarEntriesController < Api::V1::Tax::BaseController
   before_action -> { authorize_scope!(:read) }, only: :index
   before_action -> { authorize_scope!(:read_write) }, only: :bulk_update
 
   def index
-    entries = family.tax_weekly_calendar_entries.for_year(params[:start_year])
+    entries = family.tax_weekly_calendar_entries.for_year(tax_start_year)
     render json: entries.map { |e| entry_json(e) }
   end
 
   def bulk_update
-    start_year = params.require(:start_year).to_i
+    start_year = tax_start_year
     fy = Tax::FinancialYear.new(start_year)
     rows = params.require(:entries)
 
