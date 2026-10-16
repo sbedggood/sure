@@ -1,0 +1,17 @@
+Your Statement
+Statement period 1 Jul 2024 to 31 Jul 2024
+Closing Balance $817.64 CR
+
+Everyday Offset
+With your Everyday Offset account you can have the account balance working to reduce the interest
+calculated and charged to your linked home loan.
+
+Date Transaction                                                                Debit         Credit                 Balance
+01 Jul 2024 OPENING BALANCE                                                                                        $1,000.00 CR
+15 Jul COLES 0663 SAMPLEVILLE                                                                 63.20   (                        $936.80 CR
+21 Jul Transfer To J SAMPLE PayID                                                            120.00   (                        $816.80 CR
+31 Jul CREDIT INTEREST EARNED                                                                 0.84                            $817.64 CR
+31 Jul 2024 CLOSING BALANCE                                                                                        $817.64 CR
+
+Opening balance        -    Total debits     +    Total credits    =     Closing balance
+$1,000.00 CR              $184.04              $1.64                  $817.64 CR

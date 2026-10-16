@@ -1,0 +1,126 @@
+<% label = @tag_name.sub("Tax: Property - ", "").presence || @tag_name %>
+<% cell_total = @entries.sum { |e| e.amount.abs } %>
+
+<%= render DS::Dialog.new(frame: "drawer", responsive: true) do |dialog| %>
+  <% dialog.with_header(custom_header: true) do %>
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h2 id="<%= dialog.title_id %>" class="text-lg font-medium text-primary truncate"><%= label %></h2>
+        <p class="text-sm text-secondary"><%= l(@month, format: :long) %> · <%= @financial_year.label %></p>
+      </div>
+      <%= render DS::Button.new(
+            variant: "icon",
+            size: :sm,
+            icon: "x",
+            class: "ml-auto shrink-0",
+            title: t("ds.dialog.close"),
+            aria_label: t("ds.dialog.close"),
+            data: { action: "DS--dialog#close" }
+          ) %>
+    </div>
+  <% end %>
+
+  <% dialog.with_body do %>
+    <div class="space-y-4">
+      <div class="flex items-center gap-4">
+        <div class="min-w-0 space-y-0.5">
+          <p class="text-2xl font-medium text-primary privacy-sensitive"><%= number_to_currency(cell_total) %></p>
+          <p class="text-sm text-secondary"><%= t("tax.property.cell_linked", count: @entries.size) %></p>
+        </div>
+      </div>
+
+      <% if @entries.any? %>
+        <div class="space-y-1">
+          <p class="text-xs font-medium text-secondary uppercase"><%= t("tax.property.linked_transactions") %></p>
+          <div class="bg-container-inset rounded-lg divide-y divide-subdued">
+            <% @entries.each do |entry| %>
+              <div class="flex items-center justify-between gap-3 px-3 py-2">
+                <div class="min-w-0">
+                  <p class="text-sm text-primary truncate"><%= entry.name %></p>
+                  <p class="text-xs text-secondary">
+                    <%= l(entry.date, format: :short_with_year) %>
+                    <% if entry.account %> &middot; <%= entry.account.name %><% end %>
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="text-sm text-primary privacy-sensitive"><%= format_money(entry.amount_money.abs) %></span>
+                <%= button_to t("tax.property.unlink"),
+                  tax_property_cell_unlink_path,
+                  method: :delete,
+                  params: { entry_id: entry.id, tag_name: @tag_name, month: @month.iso8601, start_year: @financial_year.start_year },
+                  class: "text-xs text-destructive shrink-0" %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="space-y-2">
+        <p class="text-xs font-medium text-secondary uppercase"><%= t("recurring_occurrences.show.find_heading") %></p>
+
+        <% if @ranked_candidates.any? %>
+          <% best_entry, best_signals = @ranked_candidates.first %>
+          <%= render "tax/property_cells/candidate",
+                entry: best_entry,
+                tag_name: @tag_name,
+                month: @month,
+                financial_year: @financial_year,
+                promoted: true,
+                signals: best_signals %>
+
+          <% rest = @ranked_candidates.drop(1) %>
+          <% if rest.any? %>
+            <p class="text-xs font-medium text-secondary uppercase pt-1"><%= t("recurring_occurrences.show.other_matches") %></p>
+            <div class="divide-y divide-subdued">
+              <% rest.each do |entry, signals| %>
+                <%= render "tax/property_cells/candidate",
+                      entry: entry,
+                      tag_name: @tag_name,
+                      month: @month,
+                      financial_year: @financial_year,
+                      signals: signals %>
+              <% end %>
+            </div>
+          <% end %>
+        <% else %>
+          <p class="text-sm text-secondary px-1"><%= t("recurring_occurrences.show.no_ranked_candidates") %></p>
+        <% end %>
+
+        <%= render DS::Disclosure.new(
+              title: t("recurring_occurrences.show.search_all"),
+              align: "left",
+              open: @candidate_query.present? || @ranked_candidates.empty?
+            ) do %>
+          <div class="space-y-2 pt-1">
+            <%= form_with url: tax_property_cell_path(tag_name: @tag_name, month: @month.iso8601, start_year: @financial_year.start_year), method: :get,
+                          data: { turbo_frame: "drawer" } do %>
+              <%= render DS::SearchInput.new(
+                    name: "q",
+                    value: @candidate_query,
+                    placeholder: t("tax.property.search_placeholder"),
+                    aria_label: t("tax.property.search_placeholder")
+                  ) %>
+            <% end %>
+
+            <% if @other_entries.any? %>
+              <div class="divide-y divide-subdued">
+                <% @other_entries.each do |entry| %>
+                  <%= render "tax/property_cells/candidate",
+                        entry: entry,
+                        tag_name: @tag_name,
+                        month: @month,
+                        financial_year: @financial_year %>
+                <% end %>
+              </div>
+            <% else %>
+              <p class="text-sm text-secondary px-1">
+                <%= @candidate_query.present? ? t("recurring_occurrences.show.no_search_results", query: @candidate_query) : t("recurring_occurrences.show.no_candidates") %>
+              </p>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% end %>

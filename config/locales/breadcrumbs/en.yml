@@ -84,6 +84,8 @@ en:
     sso_providers: SSO providers
     subscriptions: Subscription
     system_health: System Health
+    tax: Tax
+    documents: Documents
     tags: Tags
     trades: Trades
     transactions: Transactions

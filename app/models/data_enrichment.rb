@@ -20,6 +20,7 @@ class DataEnrichment < ApplicationRecord
     ibkr: "ibkr",
     questrade: "questrade",
     redbark: "redbark",
+    commbank_statement: "commbank_statement",
     trade_republic: "trade_republic",
     bayes: "bayes",
     fio: "fio"

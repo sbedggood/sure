@@ -453,6 +453,24 @@ Rails.application.routes.draw do
     get :picker, on: :collection
   end
 
+  namespace :tax do
+    get "dashboard", to: "dashboard#show", as: :dashboard
+    patch "weekly_calendar_entries/bulk", to: "weekly_calendar_entries#bulk_update", as: :weekly_calendar_bulk
+    patch "settings", to: "settings#update", as: :settings
+    post "deduction_bulk_tags", to: "deduction_bulk_tags#create", as: :deduction_bulk_tags
+    post "review_decisions/decline", to: "review_decisions#decline", as: :review_decline
+    post "review_decisions/accept", to: "review_decisions#accept", as: :review_accept
+    get "property_cells", to: "property_cells#show", as: :property_cell
+    post "property_cells/link", to: "property_cells#link", as: :property_cell_link
+    delete "property_cells/unlink", to: "property_cells#unlink", as: :property_cell_unlink
+    get "documents/:tax_document_id/link", to: "document_links#show", as: :document_link
+    post "documents/:tax_document_id/link", to: "document_links#create", as: :document_link_create
+    delete "documents/:tax_document_id/link", to: "document_links#destroy", as: :document_link_destroy
+    resources :documents, only: %i[index create show destroy]
+    delete "document_attachments", to: "document_attachments#destroy", as: :document_attachment
+    get "export", to: "exports#show", as: :export
+  end
+
   # Hub page fronting budgets + goals under a single "Plan" nav entry.
   resource :plan, only: :show
 
@@ -796,6 +814,19 @@ Rails.application.routes.draw do
         resources :messages, only: [ :create ] do
           post :retry, on: :collection
         end
+      end
+
+      namespace :tax do
+        get ":start_year/summary", to: "summaries#show", as: :summary
+        get ":start_year/settings", to: "settings#show"
+        patch ":start_year/settings", to: "settings#update"
+        get ":start_year/weekly_calendar_entries", to: "weekly_calendar_entries#index"
+        put ":start_year/weekly_calendar_entries/bulk", to: "weekly_calendar_entries#bulk_update"
+        get ":start_year/documents", to: "documents#index"
+        post ":start_year/documents", to: "documents#create"
+        get ":start_year/documents/:id", to: "documents#show"
+        delete ":start_year/documents/:id", to: "documents#destroy"
+        get ":start_year/export", to: "exports#show", as: :export
       end
 
       get "users/reset/status", to: "users#reset_status"

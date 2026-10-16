@@ -1,0 +1,103 @@
+<%# locals: (rows:, show_transaction_columns: true) %>
+<div class="rounded-xl bg-container-inset space-y-1 p-1">
+  <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">
+    <p><%= t("tax.documents_all.title") %></p>
+    <span class="text-subdued">&middot;</span>
+    <p><%= rows.size %></p>
+  </div>
+
+  <div class="bg-container rounded-lg shadow-border-xs overflow-x-auto">
+    <% if rows.any? %>
+      <table class="w-full">
+        <thead>
+          <tr class="text-xs uppercase font-medium text-secondary border-b border-divider">
+            <% if show_transaction_columns %>
+              <th class="px-3 py-3 text-left min-w-12"></th>
+              <th class="px-3 py-3 text-left min-w-44"><%= t("tax.documents_all.merchant") %></th>
+              <th class="px-3 py-3 text-right min-w-24"><%= t("tax.documents_all.amount") %></th>
+              <th class="px-3 py-3 text-left min-w-28"><%= t("tax.documents_all.date") %></th>
+            <% end %>
+            <th class="px-3 py-3 text-left min-w-40"><%= t("tax.documents_all.file") %></th>
+            <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.period") %></th>
+            <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.type") %></th>
+            <th class="px-3 py-3 text-right min-w-32"><%= t("tax.documents_all.actions") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.each do |row| %>
+            <tr class="border-b border-subdued hover:bg-surface-hover">
+              <% if show_transaction_columns %>
+                <td class="px-3 py-3">
+                  <% if row.entry_id && row.merchant_logo_url.present? %>
+                    <%= image_tag Setting.transform_brand_fetch_url(row.merchant_logo_url), class: "w-8 h-8 rounded-full border border-secondary", loading: "lazy" %>
+                  <% elsif row.entry_id %>
+                    <%= render DS::FilledIcon.new(variant: :text, text: row.entry_name, size: "md", rounded: true) %>
+                  <% else %>
+                    <%= icon("file-text", size: "sm", class: "text-secondary") %>
+                  <% end %>
+                </td>
+                <td class="px-3 py-3 text-sm min-w-0">
+                  <% if row.entry_id %>
+                    <%= link_to row.entry_name, row.view_url, class: "font-medium text-primary hover:underline block truncate", data: { turbo_frame: "drawer" } %>
+                  <% else %>
+                    <span class="font-medium text-primary">—</span>
+                  <% end %>
+                  <% if row.account_name.present? %>
+                    <span class="text-xs text-secondary block truncate"><%= row.account_name %></span>
+                  <% end %>
+                </td>
+                <td class="px-3 py-3 text-sm text-right text-primary privacy-sensitive">
+                  <%= row.entry_amount ? number_to_currency(row.entry_amount) : "—" %>
+                </td>
+                <td class="px-3 py-3 text-sm text-secondary"><%= row.entry_date ? l(row.entry_date) : "—" %></td>
+              <% end %>
+              <td class="px-3 py-3 text-sm min-w-0">
+                <%= link_to row.view_url, class: "block min-w-0 hover:underline", data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
+                  <span class="block truncate font-medium text-primary"><%= row.filename %></span>
+                  <span class="text-xs text-secondary"><%= number_to_human_size(row.byte_size) %></span>
+                <% end %>
+              </td>
+              <td class="px-3 py-3 text-sm text-secondary">
+                <span class="block"><%= row.period_label %></span>
+                <span class="text-xs"><%= row.fy_label %></span>
+              </td>
+              <td class="px-3 py-3 text-sm text-secondary">
+                <%= render DS::Pill.new(label: row.document_type, tone: :neutral, marker: false) %>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex items-center justify-end gap-2 flex-wrap">
+                  <%= render DS::Link.new(
+                        text: t("tax.documents_all.view"),
+                        variant: "ghost",
+                        href: row.view_url,
+                        frame: row.entry_id ? "drawer" : "_top",
+                        class: "text-xs shrink-0"
+                      ) %>
+                  <% if row.tax_document_id %>
+                    <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id), aria: { label: t("tax.documents_all.link") }, data: { turbo_frame: "drawer" } do %>
+                      <%= icon("link-2", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% end %>
+                  <%= link_to row.download_url, aria: { label: t("tax.documents_all.download") } do %>
+                    <%= icon("download", class: "w-5 h-5 text-primary") %>
+                  <% end %>
+                  <% if row.tax_document_id %>
+                    <%= button_to tax_document_path(row.tax_document_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                      <%= icon("unlink", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% elsif row.entry_id %>
+                    <%= button_to tax_document_attachment_path(entry_id: row.entry_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_tags") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                      <%= icon("unlink", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-secondary text-center py-8 font-medium"><%= t("tax.documents_all.empty") %></p>
+    <% end %>
+  </div>
+</div>

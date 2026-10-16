@@ -1,0 +1,25 @@
+<%# locals: (entry:, financial_year:, deductions:) %>
+<div class="flex flex-wrap items-center justify-end gap-2 px-4 py-2 border-t border-subdued bg-surface-inset">
+  <%= form_with url: tax_review_accept_path, method: :post, class: "flex flex-wrap items-center justify-end gap-2 min-w-0" do %>
+    <%= hidden_field_tag :entry_id, entry.id %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <%= select_tag :tag_id,
+      options_from_collection_for_select(
+        deductions.tax_tags_for_select.reject { |t| [ Tax::TagCatalog::FOR_REVIEW_TAG, Tax::TagCatalog::DECLINED_TAG ].include?(t.name) },
+        :id, :name
+      ),
+      include_blank: false,
+      class: "min-w-0 max-w-[11rem] truncate rounded-md border border-primary bg-container px-2 py-1 text-xs",
+      title: t("tax.deductions.accept_to_tag") %>
+    <button type="submit" class="text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1" title="<%= t("tax.deductions.accept") %>">
+      <%= icon "check", size: "sm" %>
+    </button>
+  <% end %>
+
+  <%= button_to tax_review_decline_path,
+        params: { entry_id: entry.id, start_year: financial_year.start_year },
+        class: "text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1",
+        title: t("tax.deductions.decline") do %>
+    <%= icon "x", size: "sm", class: "text-subdued hover:text-primary" %>
+  <% end %>
+</div>

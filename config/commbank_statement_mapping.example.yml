@@ -1,0 +1,27 @@
+# Copy to commbank_statement_mapping.yml (gitignored locally) and fill in account UUIDs
+# from Sure → Accounts. Paths are relative to ROOT (e.g. mounted /taxes).
+
+family_email: stephen@example.com
+
+# Optional: transactions on or after this date are overlap-skipped (overrides Redbark earliest date).
+# before_date: 2024-01-01
+
+# Optional per-account cutoff (account UUID → before_date). Overrides global before_date for that account.
+# accounts:
+#   "00000000-0000-0000-0000-000000000003":
+#     before_date: 2026-07-20
+
+rules:
+  # Tax folder layout
+  - pattern: "Tax FY22/**/CBA*Everyday*.pdf"
+    account_id: "00000000-0000-0000-0000-000000000001"
+  - pattern: "Tax FY22/**/CBA*Savings*.pdf"
+    account_id: "00000000-0000-0000-0000-000000000002"
+  - pattern: "Tax FY**/**/Credit*Card*.pdf"
+    account_id: "00000000-0000-0000-0000-000000000003"
+  - pattern: "Tax FY**/**/*Home*Loan*.pdf"
+    account_id: "00000000-0000-0000-0000-000000000004"
+  - pattern: "Tax FY**/**/CFS*.pdf"
+    skip: true
+  - pattern: "**/*.pdf"
+    skip: true

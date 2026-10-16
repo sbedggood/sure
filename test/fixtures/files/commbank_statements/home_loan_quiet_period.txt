@@ -1,0 +1,5 @@
+Statement period 1 Oct 2022 - 18 Oct 2022
+Complete Home Loan Transactions - BSB 000-000 - Account XXXX0000
+Date     Transaction description                                 Debits          Credits                 Balance
+01 Oct   Opening balance                                                                         $1,000.00 DR
+18 Oct   Closing balance                                                                         $1,000.00 DR

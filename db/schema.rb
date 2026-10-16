@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -1958,7 +1958,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
     t.datetime "updated_at", null: false
     t.integer "year_built"
     t.index ["avm_last_synced_on"], name: "index_properties_on_avm_provider_sync", order: "NULLS FIRST", where: "(avm_provider IS NOT NULL)"
-    t.check_constraint "avm_provider IS NULL OR (avm_provider::text = ANY (ARRAY['rentcast'::character varying, 'realie'::character varying, 'chimnie'::character varying]::text[]))", name: "properties_avm_provider_check"
+    t.check_constraint "avm_provider IS NULL OR (avm_provider::text = ANY (ARRAY['rentcast'::character varying::text, 'realie'::character varying::text, 'chimnie'::character varying::text]))", name: "properties_avm_provider_check"
   end
 
   create_table "provider_request_counts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -2645,6 +2645,47 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
     t.index ["family_id"], name: "index_tags_on_family_id"
   end
 
+  create_table "tax_documents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "document_date"
+    t.string "document_type", null: false
+    t.uuid "entry_id"
+    t.uuid "family_id", null: false
+    t.text "note"
+    t.integer "start_year", null: false
+    t.datetime "updated_at", null: false
+    t.index ["entry_id"], name: "index_tax_documents_on_entry_id"
+    t.index ["family_id", "start_year"], name: "index_tax_documents_on_family_id_and_start_year"
+    t.index ["family_id"], name: "index_tax_documents_on_family_id"
+  end
+
+  create_table "tax_fy_settings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "car_rate_per_km", precision: 6, scale: 4, default: "0.85", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "deduction_business_use_percent", default: {}, null: false
+    t.uuid "family_id", null: false
+    t.decimal "marginal_tax_rate_percent", precision: 5, scale: 2, default: "47.0", null: false
+    t.decimal "property_allocation_percent", precision: 5, scale: 2, default: "50.0", null: false
+    t.integer "start_year", null: false
+    t.datetime "updated_at", null: false
+    t.decimal "wfh_hourly_rate", precision: 6, scale: 4, default: "0.67", null: false
+    t.index ["family_id", "start_year"], name: "index_tax_fy_settings_on_family_id_and_start_year", unique: true
+    t.index ["family_id"], name: "index_tax_fy_settings_on_family_id"
+  end
+
+  create_table "tax_weekly_calendar_entries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "family_id", null: false
+    t.decimal "km_driven", precision: 10, scale: 2, default: "0.0", null: false
+    t.text "note"
+    t.integer "start_year", null: false
+    t.datetime "updated_at", null: false
+    t.date "week_commencing", null: false
+    t.decimal "wfh_hours", precision: 8, scale: 2, default: "0.0", null: false
+    t.index ["family_id", "start_year", "week_commencing"], name: "index_tax_weekly_calendar_on_family_year_week", unique: true
+    t.index ["family_id"], name: "index_tax_weekly_calendar_entries_on_family_id"
+  end
+
   create_table "tool_calls", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "extra_content"
@@ -3113,6 +3154,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_11_151000) do
   add_foreign_key "syncs", "syncs", column: "parent_id"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tags", "families"
+  add_foreign_key "tax_documents", "entries"
+  add_foreign_key "tax_documents", "families"
+  add_foreign_key "tax_fy_settings", "families"
+  add_foreign_key "tax_weekly_calendar_entries", "families"
   add_foreign_key "tool_calls", "messages"
   add_foreign_key "trade_republic_accounts", "trade_republic_items"
   add_foreign_key "trade_republic_items", "families"
