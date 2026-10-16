@@ -1,4 +1,4 @@
-<%# locals: (group:, financial_year:, for_review:, settings:) %>
+<%# locals: (group:, financial_year:, for_review:, settings:, deductions: nil) %>
 
 <div class="bg-container-inset rounded-xl p-1 w-full <%= "ring-1 ring-warning/30" if for_review %>" data-bulk-select-target="group">
   <div class="py-2 px-4 flex items-center justify-between font-medium text-xs text-secondary">
@@ -35,12 +35,11 @@
   <div class="bg-container shadow-border-xs rounded-lg">
     <% group.entries.each do |entry| %>
       <div class="relative border-b border-subdued last:border-0">
-        <% if entry.transaction.attachments.attached? %>
-          <div class="absolute right-28 top-4 z-10 hidden lg:block" title="<%= t("tax.deductions.has_attachments") %>">
-            <%= icon("paperclip", size: "sm", class: "text-secondary") %>
-          </div>
+        <%= render "tax/dashboard/deduction_attachments", entry: entry %>
+        <% if for_review && deductions %>
+          <%= render "tax/dashboard/review_actions", entry: entry, financial_year: financial_year, deductions: deductions %>
         <% end %>
-        <%= render entry, view_ctx: "global" %>
+        <%= render "entries/entry", entry: entry, view_ctx: "tax_deductions" %>
       </div>
     <% end %>
   </div>

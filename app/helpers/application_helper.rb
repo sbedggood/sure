@@ -131,7 +131,17 @@ module ApplicationHelper
       path: tax_dashboard_path,
       icon: "file-text",
       icon_custom: false,
-      active: request.path.start_with?("/tax")
+      active: request.path.start_with?("/tax/dashboard") || request.path == "/tax"
+    }
+  end
+
+  def tax_documents_nav_item
+    {
+      name: t("layouts.application.nav.tax_documents"),
+      path: tax_documents_path,
+      icon: "folder-open",
+      icon_custom: false,
+      active: request.path.start_with?("/tax/documents")
     }
   end
 

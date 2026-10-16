@@ -2,6 +2,7 @@
 
 class TaxDocument < ApplicationRecord
   belongs_to :family
+  belongs_to :entry, optional: true
 
   has_one_attached :file
 

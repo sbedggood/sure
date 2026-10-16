@@ -1,0 +1,51 @@
+<%= render DS::Dialog.new(frame: "drawer", responsive: true) do |dialog| %>
+  <% dialog.with_header(custom_header: true) do %>
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h2 id="<%= dialog.title_id %>" class="text-lg font-medium text-primary truncate"><%= @document.file.filename %></h2>
+        <p class="text-sm text-secondary"><%= @document.document_type %> · <%= Tax::FinancialYear.new(@document.start_year).label %></p>
+      </div>
+      <%= render DS::Button.new(variant: "icon", size: :sm, icon: "x", data: { action: "DS--dialog#close" }, aria_label: t("ds.dialog.close")) %>
+    </div>
+  <% end %>
+
+  <% dialog.with_body do %>
+    <div class="space-y-4">
+      <% if @document.entry %>
+        <div class="bg-container-inset rounded-lg p-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-primary truncate"><%= @document.entry.name %></p>
+            <p class="text-xs text-secondary"><%= l(@document.entry.date) %> · <%= @document.entry.account.name %></p>
+          </div>
+          <%= button_to t("tax.documents.unlinked"),
+                tax_document_link_destroy_path(tax_document_id: @document.id),
+                method: :delete,
+                class: "text-sm text-destructive shrink-0" %>
+        </div>
+      <% else %>
+        <p class="text-sm text-secondary"><%= t("tax.documents.link_prompt") %></p>
+      <% end %>
+
+      <%= render DS::Disclosure.new(title: t("recurring_occurrences.show.search_all"), align: "left", open: true) do %>
+        <%= form_with url: tax_document_link_path(tax_document_id: @document.id), method: :get, data: { turbo_frame: "drawer" } do %>
+          <%= render DS::SearchInput.new(name: "q", value: @query, placeholder: t("tax.property.search_placeholder"), aria_label: t("tax.property.search_placeholder")) %>
+        <% end %>
+
+        <div class="divide-y divide-subdued mt-2">
+          <% @candidates.each do |entry| %>
+            <div class="flex items-center justify-between gap-3 py-2">
+              <div class="min-w-0">
+                <p class="text-sm text-primary truncate"><%= entry.name %></p>
+                <p class="text-xs text-secondary"><%= l(entry.date) %> · <%= entry.account.name %></p>
+              </div>
+              <%= button_to t("tax.property.link"),
+                    tax_document_link_create_path(tax_document_id: @document.id),
+                    params: { entry_id: entry.id },
+                    class: "text-sm text-accent shrink-0" %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

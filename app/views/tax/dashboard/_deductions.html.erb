@@ -56,12 +56,12 @@
 
   <div class="space-y-6">
     <% deductions.claim_groups.each do |group| %>
-      <%= render "tax/dashboard/deduction_tag_group", group: group, financial_year: financial_year, for_review: false, settings: settings %>
+      <%= render "tax/dashboard/deduction_tag_group", group: group, financial_year: financial_year, for_review: false, settings: settings, deductions: deductions %>
     <% end %>
     <% if deductions.for_review_group %>
       <div class="border-t border-divider pt-6">
         <p class="text-xs font-medium text-warning uppercase px-1 mb-3"><%= t("tax.deductions.for_review_heading") %></p>
-        <%= render "tax/dashboard/deduction_tag_group", group: deductions.for_review_group, financial_year: financial_year, for_review: true, settings: settings %>
+        <%= render "tax/dashboard/deduction_tag_group", group: deductions.for_review_group, financial_year: financial_year, for_review: true, settings: settings, deductions: deductions %>
       </div>
     <% end %>
     <% if deductions.groups.empty? %>

@@ -146,7 +146,11 @@
                   </div>
 
                   <div class="md:hidden flex shrink-0 min-w-0 max-w-1/2 has-[[data-tag-empty]]:hidden">
-                    <%= render "tags/menu", entry: entry, transaction: transaction, variant: :mobile %>
+                    <% if view_ctx == "tax_deductions" %>
+                      <%= render "tags/summary", transaction: transaction, variant: :mobile, editable: false %>
+                    <% else %>
+                      <%= render "tags/menu", entry: entry, transaction: transaction, variant: :mobile %>
+                    <% end %>
                   </div>
                 </div>
 
@@ -197,13 +201,20 @@
         <% if entry.account.supports_trades? && !transaction.transfer? %>
           <%# For investment/crypto accounts, show activity label instead of category %>
           <%= render "investment_activity/quick_edit_badge", entry: entry, entryable: transaction %>
+        <% elsif view_ctx == "tax_deductions" %>
+          <% category = read_only_category(transaction) %>
+          <%= render "categories/badge", category: category if category %>
         <% else %>
           <%= render "transactions/transaction_category", transaction: transaction, variant: "desktop", in_split_group: in_split_group %>
         <% end %>
       </div>
 
       <div class="hidden md:flex md:w-1/5 md:shrink-0 lg:w-auto min-w-0 items-center col-span-2 pr-2" data-tag-fit-bounds="1">
-        <%= render "tags/menu", entry: entry, transaction: transaction, variant: :desktop %>
+        <% if view_ctx == "tax_deductions" %>
+          <%= render "tags/summary", transaction: transaction, variant: :desktop, editable: false %>
+        <% else %>
+          <%= render "tags/menu", entry: entry, transaction: transaction, variant: :desktop %>
+        <% end %>
       </div>
 
       <div class="shrink-0 col-span-4 lg:col-span-2 ml-auto flex items-center justify-end gap-2 <%= "opacity-50" if entry.excluded %>">

@@ -9,8 +9,13 @@ module Tax
     def show
       @tag_name = params.require(:tag_name)
       @month = Date.iso8601(params.require(:month))
+      @candidate_query = params[:q]
       @entries = @grid.entries_for_tag_month(@tag_name, @month)
-      @search_results = @grid.search_entries(query: params[:q], tag_name: @tag_name, month: @month)
+      candidates = @grid.candidate_entries(tag_name: @tag_name, month: @month, query: @candidate_query)
+      ranked = Tax::PropertyCellMatcher.new(linked_entries: @entries, month: @month).rank(candidates)
+      @ranked_candidates = ranked.map { |c| [ c.entry, c.signals ] }
+      ranked_ids = ranked.map { |c| c.entry.id }
+      @other_entries = candidates.reject { |e| ranked_ids.include?(e.id) }.first(30)
       render layout: false
     end
 

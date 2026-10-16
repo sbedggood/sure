@@ -1,39 +1,42 @@
 <% content_for :title, t("tax.title") %>
 
-<div class="flex flex-col gap-6 p-4 lg:p-6">
-  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-    <h1 class="text-xl font-semibold text-primary">
-      <%= t("tax.title") %> — <%= @financial_year.label %>
-      <span class="text-sm font-normal text-secondary">
-        (<%= l(@financial_year.start_on, format: :long) %> – <%= l(@financial_year.end_on, format: :long) %>)
-      </span>
-    </h1>
-    <div class="flex flex-wrap items-center gap-3">
-      <%= form_with url: tax_dashboard_path, method: :get, class: "flex items-center gap-2" do %>
-        <label class="text-sm text-secondary" for="start_year"><%= t("tax.fy_label") %></label>
-        <%= select_tag :start_year,
-          options_for_select(@fy_options, @financial_year.start_year),
-          class: "rounded-md border border-primary bg-container px-2 py-1 text-primary",
-          onchange: "this.form.submit()" %>
-        <%= hidden_field_tag :section, @section %>
-      <% end %>
-      <span class="text-xs text-secondary">or <code>?fy=25</code></span>
-      <%= link_to t("tax.export"),
-        tax_export_path(start_year: @financial_year.start_year),
-        class: "text-sm font-medium text-accent" %>
+<div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
+  <header class="flex justify-between items-center gap-4 text-primary font-medium">
+    <div class="min-w-0">
+      <h1 class="text-xl"><%= t("tax.title") %></h1>
+      <p class="text-sm text-secondary mt-0.5"><%= @financial_year.label %> · <%= l(@financial_year.start_on, format: :long) %> – <%= l(@financial_year.end_on, format: :long) %></p>
     </div>
-  </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <%= form_with url: tax_dashboard_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex items-center" do |f| %>
+        <%= hidden_field_tag :section, @section %>
+        <%= render DS::Select.new(
+              form: f,
+              method: :start_year,
+              items: @fy_options.map { |label, value| { label: label, value: value } },
+              selected: @financial_year.start_year,
+              label: t("tax.fy_label")
+            ) %>
+      <% end %>
+      <%= render DS::Link.new(
+            text: t("tax.export"),
+            icon: "download",
+            variant: "outline",
+            href: tax_export_path(start_year: @financial_year.start_year),
+            frame: "_top"
+          ) %>
+    </div>
+  </header>
 
-  <nav class="flex flex-wrap gap-2 border-b border-primary pb-2">
-    <% %w[calendar property deductions documents documents_all].each do |section| %>
-      <%= link_to t("tax.sections.#{section}"),
-        tax_dashboard_path(start_year: @financial_year.start_year, section: section),
-        class: class_names(
-          "rounded-md px-3 py-1.5 text-sm",
-          @section == section ? "bg-container-inset text-primary font-medium" : "text-secondary hover:text-primary"
-        ) %>
+  <%= render DS::SegmentedControl.new(aria_label: t("tax.sections.aria_label"), class: "bg-surface-inset max-w-full overflow-x-auto") do |control| %>
+    <% %w[calendar property deductions documents].each do |section| %>
+      <% control.with_segment(
+           t("tax.sections.#{section}"),
+           active: @section == section,
+           href: tax_dashboard_path(start_year: @financial_year.start_year, section: section),
+           class: "whitespace-nowrap px-4"
+         ) %>
     <% end %>
-  </nav>
+  <% end %>
 
   <% case @section %>
   <% when "calendar" %>
@@ -43,8 +46,6 @@
   <% when "deductions" %>
     <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, deductions: @deductions %>
   <% when "documents" %>
-    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents %>
-  <% when "documents_all" %>
-    <%= render "tax/dashboard/documents_all", financial_year: @financial_year, document_rows: @all_documents %>
+    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents, doc_scope: @doc_scope %>
   <% end %>
 </div>

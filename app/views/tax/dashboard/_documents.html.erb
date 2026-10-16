@@ -1,20 +1,20 @@
-<%# locals: (financial_year:, document_rows: nil) %>
-<% documents = Current.family.tax_documents.for_year(financial_year.start_year) %>
-<% attachment_rows = (document_rows || []).select { |r| r.source == :transaction } %>
+<%# locals: (financial_year:, document_rows:, doc_scope: "fy") %>
+<% uploaded = Current.family.tax_documents.for_year(financial_year.start_year).includes(file_attachment: :blob, entry: [ :account, { entryable: :merchant } ]) %>
+<% rows = document_rows.presence || Tax::DocumentCatalog.new(family: Current.family).rows_for_fy(financial_year.start_year) %>
 
-<%= form_with url: tax_documents_path, method: :post, multipart: true, class: "mb-6 flex flex-wrap gap-3 items-end" do %>
+<%= form_with url: tax_documents_path, method: :post, multipart: true, class: "mb-4 flex flex-wrap gap-3 items-end rounded-xl bg-container-inset p-4" do %>
   <%= hidden_field_tag :start_year, financial_year.start_year %>
   <div>
-    <label class="text-sm text-secondary"><%= t("tax.documents.type") %></label>
-    <%= select_tag :document_type, options_for_select(TaxDocument::DOCUMENT_TYPES), class: "rounded border border-primary bg-container px-2 py-1" %>
+    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.type") %></label>
+    <%= select_tag :document_type, options_for_select(TaxDocument::DOCUMENT_TYPES), class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
   </div>
   <div>
-    <label class="text-sm text-secondary"><%= t("tax.documents.date") %></label>
-    <%= date_field_tag :document_date, nil, class: "rounded border border-primary bg-container px-2 py-1" %>
+    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.documents.date") %></label>
+    <%= date_field_tag :document_date, nil, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
   </div>
   <div>
-    <label class="text-sm text-secondary"><%= t("tax.calendar.note") %></label>
-    <%= text_field_tag :note, nil, class: "rounded border border-primary bg-container px-2 py-1" %>
+    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.calendar.note") %></label>
+    <%= text_field_tag :note, nil, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
   </div>
   <div>
     <%= file_field_tag :file, required: true, class: "text-sm text-primary" %>
@@ -22,48 +22,18 @@
   <%= submit_tag t("tax.documents.upload"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
 <% end %>
 
-<% if attachment_rows.any? %>
-  <div class="rounded-xl bg-container-inset space-y-1 p-1 mb-6">
-    <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">
-      <p><%= t("tax.documents.from_transactions") %></p>
-      <span class="text-subdued">&middot;</span>
-      <p><%= attachment_rows.size %></p>
-    </div>
-    <div class="bg-container rounded-lg shadow-border-xs divide-y divide-subdued">
-      <% attachment_rows.each do |row| %>
-        <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
-          <div class="min-w-0">
-            <%= link_to row.filename, row.view_url, class: "text-primary font-medium hover:underline", data: { turbo_frame: "drawer" } %>
-            <p class="text-xs text-secondary"><%= row.tag_names.join(", ") %> · <%= number_to_human_size(row.byte_size) %></p>
-          </div>
-          <%= link_to t("tax.documents_all.download"), row.download_url, class: "text-accent text-sm" %>
-        </div>
-      <% end %>
-    </div>
-  </div>
+<%= form_with url: tax_dashboard_path, method: :get, class: "mb-4 flex items-center gap-2" do %>
+  <%= hidden_field_tag :section, "documents" %>
+  <%= hidden_field_tag :start_year, financial_year.start_year %>
+  <label class="text-sm text-secondary" for="doc_scope"><%= t("tax.documents.scope_label") %></label>
+  <%= select_tag :doc_scope,
+    options_for_select([[t("tax.documents.scope_fy", fy: financial_year.label), "fy"], [t("tax.documents.scope_all"), "all"]], doc_scope),
+    class: "rounded-md border border-primary bg-container px-2 py-1 text-sm",
+    onchange: "this.form.submit()" %>
 <% end %>
 
-<ul class="divide-y divide-primary rounded-lg border border-primary">
-  <% documents.each do |doc| %>
-    <li class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
-      <div>
-        <span class="text-primary font-medium"><%= doc.document_type %></span>
-        <% if doc.document_date.present? %>
-          <span class="text-secondary"> — <%= l(doc.document_date) %></span>
-        <% end %>
-        <% if doc.note.present? %>
-          <p class="text-secondary"><%= doc.note %></p>
-        <% end %>
-      </div>
-      <div class="flex gap-3">
-        <% if doc.file.attached? %>
-          <%= link_to "Download", tax_document_path(doc), class: "text-accent" %>
-        <% end %>
-        <%= button_to "Delete", tax_document_path(doc), method: :delete, class: "text-destructive", form: { data: { turbo_confirm: "Delete this document?" } } %>
-      </div>
-    </li>
-  <% end %>
-  <% if documents.empty? %>
-    <li class="px-3 py-4 text-sm text-secondary">No documents for this financial year yet.</li>
-  <% end %>
-</ul>
+<%= render "tax/documents/table", rows: rows, show_transaction_columns: true %>
+
+<% if uploaded.any? && rows.none? { |r| r.source == :upload } %>
+  <p class="text-sm text-warning mt-2"><%= t("tax.documents.upload_sync_hint") %></p>
+<% end %>

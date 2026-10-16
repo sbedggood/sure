@@ -18,4 +18,9 @@ class Tax::TagCatalogTest < ActiveSupport::TestCase
     assert Tax::TagCatalog.deduction_tag?("Tax: Phone")
     assert Tax::TagCatalog.deduction_group_tag?("Tax: For Review")
   end
+
+  test "declined tag is excluded from deductions" do
+    refute Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::DECLINED_TAG)
+    assert Tax::TagCatalog.excluded_from_tax_workflow?(Tax::TagCatalog::DECLINED_TAG)
+  end
 end

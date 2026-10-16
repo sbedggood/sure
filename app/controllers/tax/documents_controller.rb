@@ -2,7 +2,20 @@
 
 module Tax
   class DocumentsController < ApplicationController
+    include Tax::StartYearFromParams
+
     before_action :set_document, only: %i[show destroy]
+
+    def index
+      @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
+      @fy_filter = params[:doc_fy].presence
+      @rows = if @fy_filter.present?
+        @document_catalog.rows_for_fy(@fy_filter)
+      else
+        @document_catalog.all_rows
+      end
+      @fy_options = financial_year_options
+    end
 
     def create
       start_year = params.require(:start_year).to_i
@@ -38,6 +51,14 @@ module Tax
 
       def document_params
         params.permit(:document_type, :document_date, :note)
+      end
+
+      def financial_year_options
+        current = Tax::FinancialYear.current_start_year
+        (current - 5..current).map do |year|
+          fy = Tax::FinancialYear.new(year)
+          [ fy.label, year ]
+        end.reverse
       end
   end
 end

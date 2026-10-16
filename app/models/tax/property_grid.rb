@@ -40,9 +40,28 @@ module Tax
         .where(date: month_range)
         .where(date: financial_year.range)
         .where(tags: { name: tag_name })
-        .includes(:account, entryable: :tags)
+        .includes(:account, entryable: [ :tags, :merchant, :category ])
         .distinct
         .order(:date)
+    end
+
+    def candidate_entries(tag_name:, month:, query: nil)
+      month_range = month.beginning_of_month..month.end_of_month
+      scope = @family.entries
+        .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+        .where(date: month_range)
+        .where(date: financial_year.range)
+        .includes(:account, entryable: [ :tags, :merchant ])
+        .order(:date)
+        .limit(100)
+
+      if query.present?
+        scope = scope.where("entries.name ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(query)}%")
+      end
+
+      scope.reject do |entry|
+        entry.transaction.tags.any? { |t| t.name == tag_name || Tax::TagCatalog.declined?(t.name) }
+      end
     end
 
     def search_entries(query:, tag_name:, month:)
@@ -59,7 +78,7 @@ module Tax
         scope = scope.where("entries.name ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(query)}%")
       end
 
-      scope.reject { |entry| entry.transaction.tags.any? { |t| t.name == tag_name } }
+      candidate_entries(tag_name: tag_name, month: month, query: query).first(50)
     end
   end
 end

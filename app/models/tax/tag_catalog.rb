@@ -17,6 +17,7 @@ module Tax
 
     RENTAL_INCOME_PREFIX = "Tax: Rental Income"
     FOR_REVIEW_TAG = "Tax: For Review"
+    DECLINED_TAG = "Tax: Declined"
     DONATIONS_TAG = "Tax: Donations"
     AGENT_FEES_TAG = "Tax: Agent Fees"
     PROPERTY_PREFIX = "Tax: Property - "
@@ -39,15 +40,24 @@ module Tax
       tag_name.to_s == FOR_REVIEW_TAG
     end
 
+    def declined?(tag_name)
+      tag_name.to_s == DECLINED_TAG
+    end
+
     def deduction_tag?(tag_name)
       tag_name.to_s.start_with?(PREFIX) &&
         !property_prefixed?(tag_name) &&
         !rental_income?(tag_name) &&
-        !for_review?(tag_name)
+        !for_review?(tag_name) &&
+        !declined?(tag_name)
     end
 
     def deduction_group_tag?(tag_name)
       deduction_tag?(tag_name) || for_review?(tag_name)
+    end
+
+    def excluded_from_tax_workflow?(tag_name)
+      declined?(tag_name)
     end
   end
 end

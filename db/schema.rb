@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_16_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -2649,10 +2649,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_150000) do
     t.datetime "created_at", null: false
     t.date "document_date"
     t.string "document_type", null: false
+    t.uuid "entry_id"
     t.uuid "family_id", null: false
     t.text "note"
     t.integer "start_year", null: false
     t.datetime "updated_at", null: false
+    t.index ["entry_id"], name: "index_tax_documents_on_entry_id"
     t.index ["family_id", "start_year"], name: "index_tax_documents_on_family_id_and_start_year"
     t.index ["family_id"], name: "index_tax_documents_on_family_id"
   end
@@ -3152,6 +3154,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_150000) do
   add_foreign_key "syncs", "syncs", column: "parent_id"
   add_foreign_key "taggings", "tags"
   add_foreign_key "tags", "families"
+  add_foreign_key "tax_documents", "entries"
   add_foreign_key "tax_documents", "families"
   add_foreign_key "tax_fy_settings", "families"
   add_foreign_key "tax_weekly_calendar_entries", "families"

@@ -44,6 +44,8 @@ module Tax
         tax_tag_names = @family.tags.where("name LIKE ?", "Tax:%").pluck(:name)
 
         entries_in_fy.each do |entry|
+          next if entry_declined?(entry)
+
           entry.transaction.tags.each do |tag|
             next unless TagCatalog.deduction_group_tag?(tag.name)
 
@@ -90,6 +92,10 @@ module Tax
 
       def for_review_name?(name)
         TagCatalog.for_review?(name)
+      end
+
+      def entry_declined?(entry)
+        entry.transaction.tags.any? { |t| TagCatalog.declined?(t.name) }
       end
   end
 end

@@ -15,8 +15,8 @@ module Tax
       @deductions = Tax::DeductionsPresenter.new(family: Current.family, start_year: @financial_year.start_year)
       @property_grid = Tax::PropertyGrid.new(family: Current.family, start_year: @financial_year.start_year)
       @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
-      @documents = @document_catalog.rows_for_fy(@financial_year.start_year)
-      @all_documents = @document_catalog.all_rows if @section == "documents_all"
+      @doc_scope = params[:doc_scope].presence || "fy"
+      @documents = @doc_scope == "all" ? @document_catalog.all_rows : @document_catalog.rows_for_fy(@financial_year.start_year)
       @section = "calendar" unless valid_section?(@section)
     end
 
@@ -46,7 +46,7 @@ module Tax
       end
 
       def valid_section?(section)
-        %w[calendar property deductions documents documents_all].include?(section)
+        %w[calendar property deductions documents].include?(section)
       end
 
       def financial_year_options

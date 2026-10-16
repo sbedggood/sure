@@ -40,14 +40,14 @@
             <% property_grid.months.each do |month| %>
               <% amount = row[:months][month.iso8601] || 0 %>
               <td class="px-3 py-3 text-sm text-right">
-                <%= link_to number_to_currency(amount),
+                <%= link_to(number_to_currency(amount),
                   tax_property_cell_path(
                     tag_name: row[:tag],
                     month: month.iso8601,
                     start_year: financial_year.start_year
                   ),
                   data: { turbo_frame: "drawer" },
-                  class: "text-primary hover:underline privacy-sensitive" %>
+                  class: "text-primary hover:underline privacy-sensitive") %>
               </td>
             <% end %>
             <td class="px-3 py-3 text-sm text-right font-medium text-primary privacy-sensitive"><%= number_to_currency(row[:total]) %></td>
@@ -80,14 +80,10 @@
             <% property_grid.months.each do |month| %>
               <% amount = property_grid.entries_for_tag_month(rental[:tag], month).sum { |e| e.amount.abs } %>
               <td class="px-3 py-3 text-sm text-right privacy-sensitive">
-                <% if amount.positive? %>
-                  <%= link_to number_to_currency(amount),
-                    tax_property_cell_path(tag_name: rental[:tag], month: month.iso8601, start_year: financial_year.start_year),
-                    data: { turbo_frame: "drawer" },
-                    class: "text-primary hover:underline" %>
-                <% else %>
-                  —
-                <% end %>
+                <%= link_to(amount.positive? ? number_to_currency(amount) : "—",
+                  tax_property_cell_path(tag_name: rental[:tag], month: month.iso8601, start_year: financial_year.start_year),
+                  data: { turbo_frame: "drawer" },
+                  class: "text-primary hover:underline") %>
               </td>
             <% end %>
             <td class="px-3 py-3 text-sm text-right font-medium text-primary privacy-sensitive"><%= number_to_currency(rental[:total]) %></td>

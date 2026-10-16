@@ -18,6 +18,7 @@ en:
         plan: Plan
         reports: Reports
         tax: Tax
+        tax_documents: Documents
         goals: Goals
         transactions: Transactions
     auth:
