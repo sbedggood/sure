@@ -264,9 +264,16 @@ class Import::Preflight
     end
 
     def csv_content_for(import, content)
-      return content unless import.rows_to_skip.to_i.positive?
+      normalized = content
+      if import.rows_to_skip.to_i.positive?
+        normalized = normalized.lines.drop(import.rows_to_skip.to_i).join
+      end
 
-      content.lines.drop(import.rows_to_skip.to_i).join
+      if import.is_a?(CommBankImport)
+        CommBankImport.normalize_csv_content(normalized)
+      else
+        normalized
+      end
     end
 
     def apply_import_defaults(import)

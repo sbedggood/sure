@@ -1,0 +1,16 @@
+Your Statement
+Statement period 15 Aug 2024 - 31 Dec 2024
+Loan balance $500,000.00 DR
+
+Complete Home Loan Summary
+Loan snapshot     Opening balance 15 August 2024 in debit                                        $510,000.00
+
+Complete Home Loan Transactions               - BSB 000-000  - Account XXXX0000
+
+Date     Transaction description                           Debits         Credits                   Balance
+
+15 Aug   Opening balance                                                                    $510,000.00 DR
+
+28 Aug   Interest charged                               -2,500.00                           $512,500.00 DR
+28 Aug   Repayment/Payment                                               $3,000.00          $509,500.00 DR
+31 Dec   Closing balance                                                                    $509,500.00 DR

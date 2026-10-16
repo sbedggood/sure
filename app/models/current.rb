@@ -3,6 +3,7 @@ class Current < ActiveSupport::CurrentAttributes
 
   attribute :session
   attribute :latest_sync_by_syncable, :latest_completed_sync_by_syncable, :syncing_by_syncable
+  attribute :defer_account_syncs, default: false
 
   delegate :family, to: :user, allow_nil: true
 
