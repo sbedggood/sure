@@ -89,6 +89,7 @@ module CommBankStatement
         cutoff = cutoff_date_for(account)
         adapter = Account::ProviderImportAdapter.new(account)
         claimed = Set.new
+        to_import = []
 
         parse_result.transactions.each do |txn|
           if txn.date >= cutoff
@@ -103,31 +104,46 @@ module CommBankStatement
           end
 
           imported += 1
-          next unless @apply
-
-          external_id = external_id_for(account, txn, sure_amount)
-          adapter.import_transaction(
-            external_id: external_id,
-            amount: sure_amount,
-            currency: account.currency,
-            date: txn.date,
-            name: txn.description.to_s.truncate(255),
-            source: SOURCE,
-            notes: "Imported from CommBank PDF statement backfill",
-            extra: { "commbank_statement" => { "file" => relative } },
-            allow_heuristic_matching: false
-          )
+          to_import << [ txn, sure_amount ] if @apply
         end
 
-        if @apply
-          store_statement_vault!(path, account, parse_result)
-        end
+        apply_statement!(path, relative, account, parse_result, adapter, to_import) if @apply
 
         StatementReport.new(
           path: relative, account: account, parse_result: parse_result,
           imported: imported, skipped_overlap: skipped_overlap, skipped_duplicate: skipped_duplicate,
           skipped_parse: 0, errors: errors
         )
+      rescue StandardError => e
+        errors << "#{e.class}: #{e.message}"
+        StatementReport.new(
+          path: relative, account: account, parse_result: parse_result,
+          imported: @apply ? 0 : imported,
+          skipped_overlap: skipped_overlap,
+          skipped_duplicate: skipped_duplicate,
+          skipped_parse: 0, errors: errors
+        )
+      end
+
+      def apply_statement!(path, relative, account, parse_result, adapter, to_import)
+        ActiveRecord::Base.transaction do
+          to_import.each do |txn, sure_amount|
+            external_id = external_id_for(account, txn, sure_amount)
+            adapter.import_transaction(
+              external_id: external_id,
+              amount: sure_amount,
+              currency: account.currency,
+              date: txn.date,
+              name: txn.description.to_s.truncate(255),
+              source: SOURCE,
+              notes: "Imported from CommBank PDF statement backfill",
+              extra: { "commbank_statement" => { "file" => relative } },
+              allow_heuristic_matching: false
+            )
+          end
+
+          store_statement_vault!(path, account, parse_result)
+        end
       end
 
       def store_statement_vault!(path, account, parse_result)
