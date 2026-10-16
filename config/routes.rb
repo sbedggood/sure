@@ -457,7 +457,12 @@ Rails.application.routes.draw do
     get "dashboard", to: "dashboard#show", as: :dashboard
     patch "weekly_calendar_entries/bulk", to: "weekly_calendar_entries#bulk_update", as: :weekly_calendar_bulk
     patch "settings", to: "settings#update", as: :settings
+    post "deduction_bulk_tags", to: "deduction_bulk_tags#create", as: :deduction_bulk_tags
+    get "property_cells", to: "property_cells#show", as: :property_cell
+    post "property_cells/link", to: "property_cells#link", as: :property_cell_link
+    delete "property_cells/unlink", to: "property_cells#unlink", as: :property_cell_unlink
     resources :documents, only: %i[create show destroy]
+    delete "document_attachments", to: "document_attachments#destroy", as: :document_attachment
     get "export", to: "exports#show", as: :export
   end
 

@@ -1,0 +1,47 @@
+<%# locals: (group:, financial_year:, for_review:, settings:) %>
+
+<div class="bg-container-inset rounded-xl p-1 w-full <%= "ring-1 ring-warning/30" if for_review %>" data-bulk-select-target="group">
+  <div class="py-2 px-4 flex items-center justify-between font-medium text-xs text-secondary">
+    <div class="flex pl-0.5 items-center gap-4">
+      <%= check_box_tag "tax_group_#{group.tag.parameterize}",
+        class: "checkbox checkbox--light hidden lg:block",
+        data: {
+          action: "bulk-select#toggleGroupSelection",
+          checkbox_toggle_target: "selectionEntry"
+        } %>
+      <p class="uppercase space-x-1.5">
+        <span class="<%= "text-warning" if for_review %>"><%= group.tag %></span>
+        <span>·</span>
+        <span><%= group.entries.size %></span>
+      </p>
+    </div>
+    <div class="privacy-sensitive text-primary">
+      <%= number_to_currency(group.total_amount) %>
+      <% unless for_review %>
+        <span class="text-secondary"> · <%= t("tax.deductions.claim") %> <%= number_to_currency(group.claim_amount) %></span>
+        <%= form_with url: tax_settings_path, method: :patch, class: "inline-flex items-center gap-1 ml-2" do %>
+          <%= hidden_field_tag :start_year, financial_year.start_year %>
+          <%= hidden_field_tag :return_section, "deductions" %>
+          <label class="sr-only"><%= t("tax.deductions.business_use") %></label>
+          <%= number_field_tag "tax_fy_setting[deduction_business_use_percent][#{group.tag}]",
+            settings.business_use_percent_for(group.tag),
+            step: 0.01, class: "w-14 rounded border border-primary bg-container px-1 py-0.5 text-xs" %>
+          <span class="text-secondary">%</span>
+          <%= submit_tag "↵", class: "text-xs text-accent" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+  <div class="bg-container shadow-border-xs rounded-lg">
+    <% group.entries.each do |entry| %>
+      <div class="relative border-b border-subdued last:border-0">
+        <% if entry.transaction.attachments.attached? %>
+          <div class="absolute right-28 top-4 z-10 hidden lg:block" title="<%= t("tax.deductions.has_attachments") %>">
+            <%= icon("paperclip", size: "sm", class: "text-secondary") %>
+          </div>
+        <% end %>
+        <%= render entry, view_ctx: "global" %>
+      </div>
+    <% end %>
+  </div>
+</div>

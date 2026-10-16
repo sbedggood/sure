@@ -25,7 +25,7 @@
   </div>
 
   <nav class="flex flex-wrap gap-2 border-b border-primary pb-2">
-    <% %w[calendar property deductions documents].each do |section| %>
+    <% %w[calendar property deductions documents documents_all].each do |section| %>
       <%= link_to t("tax.sections.#{section}"),
         tax_dashboard_path(start_year: @financial_year.start_year, section: section),
         class: class_names(
@@ -39,10 +39,12 @@
   <% when "calendar" %>
     <%= render "tax/dashboard/calendar", weeks: @weeks, financial_year: @financial_year, summary: @summary %>
   <% when "property" %>
-    <%= render "tax/dashboard/property", financial_year: @financial_year, settings: @settings, summary: @summary %>
+    <%= render "tax/dashboard/property", financial_year: @financial_year, settings: @settings, summary: @summary, property_grid: @property_grid %>
   <% when "deductions" %>
-    <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, summary: @summary %>
+    <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, deductions: @deductions %>
   <% when "documents" %>
-    <%= render "tax/dashboard/documents", financial_year: @financial_year %>
+    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents %>
+  <% when "documents_all" %>
+    <%= render "tax/dashboard/documents_all", financial_year: @financial_year, document_rows: @all_documents %>
   <% end %>
 </div>

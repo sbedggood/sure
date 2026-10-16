@@ -1,0 +1,102 @@
+<%# locals: (financial_year:, document_rows:) %>
+<% rows = document_rows || [] %>
+<% fy_filter = params[:doc_fy].presence %>
+
+<div class="mb-4 flex flex-wrap items-center gap-3">
+  <%= form_with url: tax_dashboard_path, method: :get, class: "flex items-center gap-2" do %>
+    <%= hidden_field_tag :section, "documents_all" %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <label class="text-sm text-secondary" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
+    <%= select_tag :doc_fy,
+      options_for_select([[t("tax.documents_all.all_fys"), ""]] + rows.map(&:start_year).uniq.sort.reverse.map { |y| [Tax::FinancialYear.new(y).label, y] }, fy_filter),
+      class: "rounded-md border border-primary bg-container px-2 py-1 text-sm",
+      onchange: "this.form.submit()" %>
+  <% end %>
+  <%= link_to t("tax.documents_all.upload_for_fy", fy: financial_year.label),
+    tax_dashboard_path(start_year: financial_year.start_year, section: "documents"),
+    class: "text-sm text-accent" %>
+</div>
+
+<div class="rounded-xl bg-container-inset space-y-1 p-1">
+  <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">
+    <p><%= t("tax.documents_all.title") %></p>
+    <span class="text-subdued">&middot;</span>
+    <p><%= rows.size %></p>
+  </div>
+
+  <div class="bg-container rounded-lg shadow-border-xs overflow-x-auto">
+    <% filtered = fy_filter.present? ? rows.select { |r| r.start_year.to_s == fy_filter.to_s } : rows %>
+    <% if filtered.any? %>
+      <table class="w-full">
+        <thead>
+          <tr class="text-xs uppercase font-medium text-secondary border-b border-divider">
+            <th class="px-3 py-3 text-left min-w-56"><%= t("tax.documents_all.file") %></th>
+            <th class="px-3 py-3 text-left min-w-44"><%= t("tax.documents_all.period") %></th>
+            <th class="px-3 py-3 text-left min-w-32"><%= t("tax.documents_all.type") %></th>
+            <th class="px-3 py-3 text-left min-w-48"><%= t("tax.documents_all.tags") %></th>
+            <th class="px-3 py-3 text-right min-w-24"><%= t("tax.documents_all.actions") %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% filtered.each do |row| %>
+            <tr class="border-b border-subdued hover:bg-surface-hover">
+              <td class="px-3 py-3">
+                <%= link_to row.view_url, class: "flex items-center gap-2 min-w-0 text-sm font-medium text-primary hover:underline", data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
+                  <%= icon("file-text", size: "sm") %>
+                  <span class="min-w-0">
+                    <span class="block truncate"><%= row.filename %></span>
+                    <span class="block text-xs text-secondary font-normal"><%= number_to_human_size(row.byte_size) %></span>
+                  </span>
+                <% end %>
+              </td>
+              <td class="px-3 py-3 text-sm text-secondary">
+                <span class="block"><%= row.period_label %></span>
+                <span class="text-xs"><%= row.fy_label %></span>
+              </td>
+              <td class="px-3 py-3 text-sm text-secondary">
+                <%= render DS::Pill.new(label: row.document_type, tone: :neutral, marker: false) %>
+              </td>
+              <td class="px-3 py-3 text-xs text-secondary">
+                <% if row.tag_names.any? %>
+                  <%= row.tag_names.join(", ") %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+              <td class="px-3 py-3">
+                <div class="flex items-center justify-end gap-3">
+                  <%= link_to row.view_url, aria: { label: t("tax.documents_all.view") }, data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
+                    <%= icon("eye", class: "w-5 h-5 text-primary") %>
+                  <% end %>
+                  <% if row.tax_document_id %>
+                    <%= link_to tax_dashboard_path(start_year: row.start_year, section: "documents"), aria: { label: t("tax.documents_all.edit") } do %>
+                      <%= icon("pencil-line", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% elsif row.entry_id %>
+                    <%= link_to entry_path(row.entry_id), aria: { label: t("tax.documents_all.edit") }, data: { turbo_frame: "drawer" } do %>
+                      <%= icon("pencil-line", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% end %>
+                  <%= link_to row.download_url, aria: { label: t("tax.documents_all.download") } do %>
+                    <%= icon("download", class: "w-5 h-5 text-primary") %>
+                  <% end %>
+                  <% if row.tax_document_id %>
+                    <%= button_to tax_document_path(row.tax_document_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                      <%= icon("unlink", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% elsif row.entry_id %>
+                    <%= button_to tax_document_attachment_path(entry_id: row.entry_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_tags") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                      <%= icon("unlink", class: "w-5 h-5 text-primary") %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="text-sm text-secondary text-center py-8 font-medium"><%= t("tax.documents_all.empty") %></p>
+    <% end %>
+  </div>
+</div>

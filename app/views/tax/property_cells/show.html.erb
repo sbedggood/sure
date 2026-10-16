@@ -1,0 +1,46 @@
+<%= turbo_frame_tag "drawer" do %>
+  <div class="p-4 space-y-4 bg-container h-full overflow-y-auto">
+    <div>
+      <h2 class="text-lg font-semibold text-primary"><%= @tag_name %></h2>
+      <p class="text-sm text-secondary"><%= l(@month, format: :long) %> · <%= @financial_year.label %></p>
+    </div>
+
+    <div class="rounded-lg border border-primary">
+      <% @entries.each do |entry| %>
+        <div class="border-b border-subdued last:border-0 relative">
+          <div class="absolute right-3 top-3 z-10">
+            <%= button_to t("tax.property.unlink"),
+              tax_property_cell_unlink_path,
+              method: :delete,
+              params: { entry_id: entry.id, tag_name: @tag_name, month: @month.iso8601, start_year: @financial_year.start_year },
+              class: "text-xs text-destructive" %>
+          </div>
+          <%= render entry, view_ctx: "global" %>
+        </div>
+      <% end %>
+      <% if @entries.empty? %>
+        <p class="text-sm text-secondary p-4"><%= t("tax.property.cell_empty") %></p>
+      <% end %>
+    </div>
+
+    <div class="rounded-xl bg-container-inset p-4 space-y-3">
+      <h3 class="text-sm font-medium text-primary"><%= t("tax.property.link_transaction") %></h3>
+      <%= form_with url: tax_property_cell_path(tag_name: @tag_name, month: @month.iso8601, start_year: @financial_year.start_year), method: :get, class: "flex gap-2" do %>
+        <%= text_field_tag :q, params[:q], placeholder: t("tax.property.search_placeholder"), class: "flex-1 rounded-md border border-primary bg-container px-2 py-1 text-sm" %>
+        <%= submit_tag t("tax.property.search"), class: "text-sm text-accent" %>
+      <% end %>
+      <% @search_results.each do |entry| %>
+        <div class="flex items-center justify-between gap-2 text-sm border-b border-subdued py-2">
+          <div class="min-w-0">
+            <p class="text-primary font-medium truncate"><%= entry.name %></p>
+            <p class="text-secondary text-xs"><%= l(entry.date) %> · <%= entry.account.name %></p>
+          </div>
+          <%= button_to t("tax.property.link"),
+            tax_property_cell_link_path,
+            params: { entry_id: entry.id, tag_name: @tag_name, month: @month.iso8601, start_year: @financial_year.start_year },
+            class: "text-accent text-sm shrink-0" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -1,51 +1,71 @@
-<% data = summary.as_json[:deductions] %>
-<%= form_with url: tax_settings_path, method: :patch, class: "mb-6 flex flex-wrap gap-4 items-end" do %>
+<%# locals: (financial_year:, settings:, deductions:) %>
+<% data = Tax::Summary.new(family: Current.family, start_year: financial_year.start_year).as_json[:deductions] %>
+
+<%= form_with url: tax_settings_path, method: :patch, class: "mb-4 flex flex-wrap gap-4 items-end rounded-xl bg-container-inset p-4" do %>
   <%= hidden_field_tag :start_year, financial_year.start_year %>
   <%= hidden_field_tag :return_section, "deductions" %>
   <div>
-    <label class="text-sm text-secondary">WFH rate ($/hr)</label>
-    <%= number_field_tag "tax_fy_setting[wfh_hourly_rate]", settings.wfh_hourly_rate, step: 0.01, class: "rounded border border-primary bg-container px-2 py-1" %>
+    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.deductions.wfh_rate") %></label>
+    <%= number_field_tag "tax_fy_setting[wfh_hourly_rate]", settings.wfh_hourly_rate, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
   </div>
   <div>
-    <label class="text-sm text-secondary">Car rate ($/km)</label>
-    <%= number_field_tag "tax_fy_setting[car_rate_per_km]", settings.car_rate_per_km, step: 0.01, class: "rounded border border-primary bg-container px-2 py-1" %>
+    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.deductions.car_rate") %></label>
+    <%= number_field_tag "tax_fy_setting[car_rate_per_km]", settings.car_rate_per_km, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
+  </div>
+  <div class="text-sm text-secondary">
+    <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>
+    <%= number_to_currency(data[:home_office][:claim]) %>
+    <span class="mx-2">·</span>
+    <span class="text-primary font-medium"><%= t("tax.deductions.car") %>:</span>
+    <%= number_to_currency(data[:car][:claim]) %>
   </div>
   <%= submit_tag t("tax.property.save_settings"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
 <% end %>
 
-<div class="grid gap-4 md:grid-cols-3 mb-6 text-sm">
-  <div class="rounded-lg border border-primary p-3">
-    <p class="text-secondary">D5 Home office</p>
-    <p class="text-primary font-medium"><%= number_to_currency(data[:home_office][:claim]) %></p>
-  </div>
-  <div class="rounded-lg border border-primary p-3">
-    <p class="text-secondary">D1 Car</p>
-    <p class="text-primary font-medium"><%= number_to_currency(data[:car][:claim]) %></p>
-  </div>
-  <div class="rounded-lg border border-primary p-3">
-    <p class="text-secondary">Grand total claim</p>
-    <p class="text-primary font-medium"><%= number_to_currency(data[:grand_total]) %></p>
+<div class="rounded-xl bg-container-inset space-y-1 p-1 mb-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <div class="text-sm text-secondary">
+      <span class="text-primary font-medium"><%= t("tax.deductions.claim") %>:</span>
+      <%= number_to_currency(deductions.claimable_grand_total) %>
+    </div>
+    <% if deductions.for_review_group %>
+      <div class="text-sm text-secondary">
+        <span class="font-medium text-warning"><%= t("tax.deductions.pending_review") %>:</span>
+        <%= number_to_currency(deductions.pending_for_review_total.abs) %>
+      </div>
+    <% end %>
   </div>
 </div>
 
-<% data[:tag_lines].each do |line| %>
-  <div class="mb-6">
-    <h2 class="text-sm font-semibold text-primary mb-2"><%= line[:tag] %></h2>
-    <%= form_with url: tax_settings_path, method: :patch, class: "mb-2 flex items-center gap-2" do %>
-      <%= hidden_field_tag :start_year, financial_year.start_year %>
-      <%= hidden_field_tag :return_section, "deductions" %>
-      <label class="text-sm text-secondary"><%= t("tax.deductions.business_use") %></label>
-      <%= number_field_tag "tax_fy_setting[deduction_business_use_percent][#{line[:tag]}]",
-        line[:business_use_percent], step: 0.01, class: "w-20 rounded border border-primary bg-container px-2 py-1" %>
-      <%= submit_tag "Update", class: "text-sm text-accent" %>
-      <span class="text-sm text-secondary">
-        <%= t("tax.deductions.claim") %>: <%= number_to_currency(line[:claim]) %>
-      </span>
-    <% end %>
-    <ul class="text-sm text-secondary list-disc pl-5">
-      <% line[:transactions].each do |txn| %>
-        <li><%= txn[:date] %> — <%= txn[:name] %> (<%= number_to_currency(txn[:amount]) %>)</li>
-      <% end %>
-    </ul>
+<div id="tax-deductions"
+  data-controller="bulk-select checkbox-toggle"
+  data-bulk-select-singular-label-value="<%= t("tax.deductions.entry") %>"
+  data-bulk-select-plural-label-value="<%= t("tax.deductions.entries") %>"
+  data-bulk-select-selected-label-value="<%= t("transactions.selection_bar.selected") %>"
+  class="flex flex-col bg-container rounded-xl shadow-border-xs px-3 py-4 lg:p-4 relative">
+
+  <div id="tax-deduction-selection-bar" data-bulk-select-target="selectionBar" class="flex justify-center hidden mb-4">
+    <%= render "tax/dashboard/deduction_selection_bar", deductions: deductions, financial_year: financial_year %>
   </div>
-<% end %>
+
+  <div class="grid-cols-12 bg-container-inset rounded-xl px-5 py-3 text-xs uppercase font-medium text-secondary items-center mb-4 hidden lg:grid">
+    <div class="pl-0.5 col-span-5"><%= t("tax.deductions.columns.name") %></div>
+    <div class="col-span-3 text-center"><%= t("tax.deductions.columns.category") %></div>
+    <div class="col-span-4 text-right"><%= t("tax.deductions.columns.amount") %></div>
+  </div>
+
+  <div class="space-y-6">
+    <% deductions.claim_groups.each do |group| %>
+      <%= render "tax/dashboard/deduction_tag_group", group: group, financial_year: financial_year, for_review: false, settings: settings %>
+    <% end %>
+    <% if deductions.for_review_group %>
+      <div class="border-t border-divider pt-6">
+        <p class="text-xs font-medium text-warning uppercase px-1 mb-3"><%= t("tax.deductions.for_review_heading") %></p>
+        <%= render "tax/dashboard/deduction_tag_group", group: deductions.for_review_group, financial_year: financial_year, for_review: true, settings: settings %>
+      </div>
+    <% end %>
+    <% if deductions.groups.empty? %>
+      <p class="text-sm text-secondary text-center py-8 font-medium"><%= t("tax.deductions.empty") %></p>
+    <% end %>
+  </div>
+</div>

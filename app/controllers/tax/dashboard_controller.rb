@@ -12,6 +12,12 @@ module Tax
       @summary = Tax::Summary.new(family: Current.family, start_year: @financial_year.start_year)
       @weeks = build_calendar_weeks
       @fy_options = financial_year_options
+      @deductions = Tax::DeductionsPresenter.new(family: Current.family, start_year: @financial_year.start_year)
+      @property_grid = Tax::PropertyGrid.new(family: Current.family, start_year: @financial_year.start_year)
+      @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
+      @documents = @document_catalog.rows_for_fy(@financial_year.start_year)
+      @all_documents = @document_catalog.all_rows if @section == "documents_all"
+      @section = "calendar" unless valid_section?(@section)
     end
 
     private
@@ -37,6 +43,10 @@ module Tax
             week_commencing: week
           )
         end
+      end
+
+      def valid_section?(section)
+        %w[calendar property deductions documents documents_all].include?(section)
       end
 
       def financial_year_options

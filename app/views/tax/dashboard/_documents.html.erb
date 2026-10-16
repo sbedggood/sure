@@ -1,4 +1,6 @@
+<%# locals: (financial_year:, document_rows: nil) %>
 <% documents = Current.family.tax_documents.for_year(financial_year.start_year) %>
+<% attachment_rows = (document_rows || []).select { |r| r.source == :transaction } %>
 
 <%= form_with url: tax_documents_path, method: :post, multipart: true, class: "mb-6 flex flex-wrap gap-3 items-end" do %>
   <%= hidden_field_tag :start_year, financial_year.start_year %>
@@ -18,6 +20,27 @@
     <%= file_field_tag :file, required: true, class: "text-sm text-primary" %>
   </div>
   <%= submit_tag t("tax.documents.upload"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
+<% end %>
+
+<% if attachment_rows.any? %>
+  <div class="rounded-xl bg-container-inset space-y-1 p-1 mb-6">
+    <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">
+      <p><%= t("tax.documents.from_transactions") %></p>
+      <span class="text-subdued">&middot;</span>
+      <p><%= attachment_rows.size %></p>
+    </div>
+    <div class="bg-container rounded-lg shadow-border-xs divide-y divide-subdued">
+      <% attachment_rows.each do |row| %>
+        <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+          <div class="min-w-0">
+            <%= link_to row.filename, row.view_url, class: "text-primary font-medium hover:underline", data: { turbo_frame: "drawer" } %>
+            <p class="text-xs text-secondary"><%= row.tag_names.join(", ") %> · <%= number_to_human_size(row.byte_size) %></p>
+          </div>
+          <%= link_to t("tax.documents_all.download"), row.download_url, class: "text-accent text-sm" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
 <% end %>
 
 <ul class="divide-y divide-primary rounded-lg border border-primary">
