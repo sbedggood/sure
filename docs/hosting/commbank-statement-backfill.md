@@ -2,6 +2,8 @@
 
 Deterministic parsers for Commonwealth Bank PDF statements (everyday/savings, credit card, and home loan transaction listings) plus a bulk task to import historical transactions into Sure **before** your Redbark sync window and store originals in the **Statement Vault**.
 
+PDF text is extracted with **`pdftotext -layout`** (from `poppler-utils`, already in the app Docker image). This matches CommBank’s column layout far more reliably than raw `PDF::Reader` output.
+
 This is intended for self-hosted Docker setups where tax folders live on the host (for example `~/Documents/Taxes`).
 
 ## Supported statement types

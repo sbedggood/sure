@@ -11,64 +11,60 @@ module CommBankStatement
       end
 
       def parse_text(text, filename: nil)
-        type = detect_type(text, filename)
-        result = case type
-        when :credit_card
-          CreditCardParser.new(text).parse
-        when :home_loan
-          TransactionAccountParser.new(text).parse
-            .with(metadata: { home_loan: true })
-        else
-          TransactionAccountParser.new(text).parse
+        normalized = TextNormalizer.normalize(text)
+        classification = DocumentClassifier.classify(normalized, filename: filename)
+
+        if classification.is_a?(DocumentClassifier::Skipped)
+          raise SkippedDocument, classification.reason
         end
 
-        result = apply_period_from_header(text, result)
+        result = case classification
+        when :credit_card
+          CreditCardParser.new(normalized).parse
+        when :home_loan
+          BalancedTableParser.new(normalized, statement_type: :home_loan).parse
+        else
+          BalancedTableParser.new(normalized, statement_type: :transaction_account).parse
+        end
+
+        result = apply_period_from_header(normalized, result)
         validate_balances(result)
       end
 
       def detect_type(text, filename = nil)
-        normalized = text.to_s
-        name = filename.to_s.downcase
+        classification = DocumentClassifier.classify(TextNormalizer.normalize(text), filename: filename)
+        return :skipped if classification.is_a?(DocumentClassifier::Skipped)
 
-        return :credit_card if normalized.include?("Amount(A$)") ||
-          normalized.match?(/credit\s+card/i) ||
-          name.include?("credit") || name.include?("card")
-
-        return :home_loan if normalized.match?(/home\s+loan/i) || name.include?("loan") || name.include?("mortgage")
-
-        :transaction_account
+        classification
       end
 
       private
 
         def apply_period_from_header(text, result)
-          if (match = text.match(/(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*(?:to|–|-)\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/i))
-            begin
-              return result.with(
-                period_start_on: Date.strptime(match[1], "%d %b %Y"),
-                period_end_on: Date.strptime(match[2], "%d %b %Y")
-              )
-            rescue ArgumentError
-              return result
-            end
-          end
-          result
+          period = PeriodParser.parse(text)
+          return result unless period
+
+          result.with(
+            period_start_on: result.period_start_on || period.start_on,
+            period_end_on: result.period_end_on || period.end_on
+          )
         end
 
         def validate_balances(result)
           errors = []
           txs = result.transactions
 
-          if result.statement_type == :transaction_account &&
+          if result.statement_type.in?([ :transaction_account, :home_loan ]) &&
               (result.opening_balance.nil? || result.closing_balance.nil?)
             errors << "Missing opening or closing balance"
           end
 
-          if txs.empty?
+          if txs.empty? && !errors.include?("Missing opening or closing balance")
             errors << "No transactions parsed"
           end
 
-          if result.statement_type == :transaction_account && txs.any?
+          if result.statement_type.in?([ :transaction_account, :home_loan ]) && txs.any? &&
+              result.opening_balance.present?
             running = result.opening_balance
             txs.each_with_index do |txn, index|
               expected = running + txn.amount

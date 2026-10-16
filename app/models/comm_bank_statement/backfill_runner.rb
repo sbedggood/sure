@@ -47,6 +47,9 @@ module CommBankStatement
 
         begin
           parse_result = Parser.parse_file(path.to_s)
+        rescue SkippedDocument => e
+          log "SKIP #{relative} (#{e.reason})"
+          next
         rescue Parser::ParseError => e
           reports << StatementReport.new(path: relative, account: account, parse_result: nil,
             imported: 0, skipped_overlap: 0, skipped_duplicate: 0, skipped_parse: 1, errors: [ e.message ])

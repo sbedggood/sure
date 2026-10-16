@@ -35,10 +35,13 @@ module CommBankStatement
       return nil if value.blank?
 
       cleaned = value.to_s.strip
+      trailing_negative = cleaned.end_with?("-")
+      cleaned = cleaned.delete_suffix("-")
       cleaned = cleaned.delete_prefix("$").delete_prefix("A$").gsub(",", "").strip
       return nil unless cleaned.match?(/^-?\d+(?:\.\d+)?$/)
 
-      BigDecimal(cleaned)
+      amount = BigDecimal(cleaned)
+      trailing_negative ? -amount.abs : amount
     end
 
     # Signed movement from debit/credit columns (asset account convention).

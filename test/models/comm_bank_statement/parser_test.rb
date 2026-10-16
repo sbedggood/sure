@@ -7,7 +7,7 @@ class CommBankStatement::ParserTest < ActiveSupport::TestCase
     text = file_fixture("commbank_statements/everyday_jul_2024.txt").read
     result = CommBankStatement::Parser.parse_text(text, filename: "everyday.pdf")
 
-    assert_equal :transaction_account, result.statement_type
+    assert_equal :transaction_account, CommBankStatement::Parser.detect_type(text, filename: "everyday.pdf")
     assert result.balance_check_passed, result.balance_check_errors.inspect
     assert_equal 3, result.transactions.size
     assert_equal Date.new(2024, 7, 15), result.transactions.first.date
@@ -15,21 +15,36 @@ class CommBankStatement::ParserTest < ActiveSupport::TestCase
     assert_equal Date.new(2024, 7, 31), result.period_end_on
   end
 
-  test "detects credit card layout" do
-    text = <<~TEXT
-      Awards Credit Card
-      Statement period 1 Jul 2024 to 31 Jul 2024
-      Opening balance $500.00
-      Closing balance $650.00
-      Date
-      Transaction
-      Amount
-      15 Jul COLES 0663 ALTONA 63.20
-      20 Jul PAYMENT RECEIVED -200.00
-    TEXT
-
+  test "parses credit card layout" do
+    text = file_fixture("commbank_statements/credit_card_sample.txt").read
     result = CommBankStatement::Parser.parse_text(text, filename: "card.pdf")
-    assert_equal :credit_card, result.statement_type
+
+    assert_equal :credit_card, CommBankStatement::Parser.detect_type(text, filename: "card.pdf")
+    assert result.balance_check_passed, result.balance_check_errors.inspect
     assert_equal 2, result.transactions.size
+  end
+
+  test "parses home loan statement" do
+    text = file_fixture("commbank_statements/home_loan_sample.txt").read
+    result = CommBankStatement::Parser.parse_text(text, filename: "loan.pdf")
+
+    assert_equal :home_loan, CommBankStatement::Parser.detect_type(text, filename: "loan.pdf")
+    assert result.balance_check_passed, result.balance_check_errors.inspect
+    assert_equal 2, result.transactions.size
+  end
+
+  test "skips repayment notice documents" do
+    text = file_fixture("commbank_statements/repayment_notice_sample.txt").read
+
+    assert_equal :skipped, CommBankStatement::Parser.detect_type(text, filename: "notice.pdf")
+    assert_raises(CommBankStatement::SkippedDocument) do
+      CommBankStatement::Parser.parse_text(text, filename: "notice.pdf")
+    end
+  end
+
+  test "everyday offset marketing copy does not classify as home loan" do
+    text = file_fixture("commbank_statements/everyday_jul_2024.txt").read
+
+    refute_equal :home_loan, CommBankStatement::Parser.detect_type(text, filename: "everyday.pdf")
   end
 end

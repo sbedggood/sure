@@ -12,4 +12,8 @@ class CommBankStatement::AmountParserTest < ActiveSupport::TestCase
     amount = CommBankStatement::AmountParser.signed_from_debit_credit("63.20", nil)
     assert_equal BigDecimal("-63.2"), amount
   end
+
+  test "parse_money treats trailing minus as credit card payment" do
+    assert_equal BigDecimal("-8141.93"), CommBankStatement::AmountParser.parse_money("8,141.93-")
+  end
 end
