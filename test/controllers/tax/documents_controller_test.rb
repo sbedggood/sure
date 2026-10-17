@@ -29,6 +29,7 @@ class Tax::DocumentsControllerTest < ActionDispatch::IntegrationTest
     assert_select "[data-document-viewer-panel][role='dialog']"
     assert_select "iframe[src=?]", @document.inline_blob_path
     assert_select "a[href=?]", download_tax_document_path(@document)
+    assert_select "button[data-document-viewer-close]"
   end
 
   test "download redirects with attachment disposition" do

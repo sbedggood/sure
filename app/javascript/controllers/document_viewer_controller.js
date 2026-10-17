@@ -1,9 +1,13 @@
 import { Controller } from "@hotwired/stimulus";
 import { Turbo } from "@hotwired/turbo-rails";
 import { computePanelStyles, LG_BREAKPOINT_PX } from "utils/document_viewer_layout";
-
-const PANEL_SELECTOR = "[data-document-viewer-panel]";
-const SLOT_SELECTOR = "[data-document-viewer-slot]";
+import {
+  PANEL_SELECTOR,
+  SLOT_SELECTOR,
+  focusDrawerForViewerEscape,
+  removeViewerFromDom,
+  viewerPanelElement,
+} from "utils/document_viewer_dom";
 
 // Tax document preview: mounts inside the open drawer <dialog> so controls stay
 // interactive above the modal backdrop; clears when the drawer closes.
@@ -16,14 +20,15 @@ export default class extends Controller {
     this.boundLayout = this.layout.bind(this);
     this.boundOnFrameLoad = this.onFrameLoad.bind(this);
     this.boundOnTransitionEnd = this.onTransitionEnd.bind(this);
-    this.boundOnEscape = this.onEscape.bind(this);
     this.boundOnDrawerClose = this.onDrawerClose.bind(this);
     this.boundBeforeFrameRender = this.onBeforeFrameRender.bind(this);
+    this.boundOnCloseClick = this.onCloseClick.bind(this);
+    this.boundOnDialogCancel = this.onDialogCancel.bind(this);
 
     window.addEventListener("resize", this.boundLayout);
     document.addEventListener("turbo:frame-load", this.boundOnFrameLoad);
     document.addEventListener("turbo:frame-render", this.boundOnFrameLoad);
-    document.addEventListener("keydown", this.boundOnEscape, true);
+    document.addEventListener("click", this.boundOnCloseClick);
     document.addEventListener("turbo:before-frame-render", this.boundBeforeFrameRender);
 
     this.observeDrawer();
@@ -34,7 +39,7 @@ export default class extends Controller {
     window.removeEventListener("resize", this.boundLayout);
     document.removeEventListener("turbo:frame-load", this.boundOnFrameLoad);
     document.removeEventListener("turbo:frame-render", this.boundOnFrameLoad);
-    document.removeEventListener("keydown", this.boundOnEscape, true);
+    document.removeEventListener("click", this.boundOnCloseClick);
     document.removeEventListener("turbo:before-frame-render", this.boundBeforeFrameRender);
     this.resizeObserver?.disconnect();
     this.drawerObserver?.disconnect();
@@ -44,24 +49,30 @@ export default class extends Controller {
 
   close(event) {
     event?.preventDefault();
+    event?.stopPropagation();
     this.clearViewer();
   }
 
-  onEscape(event) {
-    if (event.key !== "Escape") return;
-    if (!this.panelElement()) return;
+  onCloseClick(event) {
+    if (!event.target.closest("[data-document-viewer-close]")) return;
+
+    this.close(event);
+  }
+
+  onDialogCancel(event) {
+    if (!viewerPanelElement()) return;
 
     event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
     this.clearViewer();
   }
 
   clearViewer() {
-    if (!this.clearUrlValue) return;
-
-    Turbo.visit(this.clearUrlValue, { frame: "document_viewer" });
+    removeViewerFromDom();
     this.syncHostPointerEvents();
+
+    if (this.clearUrlValue) {
+      Turbo.visit(this.clearUrlValue, { frame: "document_viewer" });
+    }
   }
 
   onFrameLoad(event) {
@@ -77,6 +88,7 @@ export default class extends Controller {
     if (frame.id !== "document_viewer") return;
 
     this.scheduleLayout();
+    this.focusDrawerAfterViewerOpen();
   }
 
   onBeforeFrameRender(event) {
@@ -92,6 +104,15 @@ export default class extends Controller {
 
   onDrawerClose() {
     this.clearViewer();
+  }
+
+  focusDrawerAfterViewerOpen() {
+    requestAnimationFrame(() => {
+      const dialog = this.openDrawerDialog();
+      if (!dialog || !viewerPanelElement()) return;
+
+      focusDrawerForViewerEscape(dialog);
+    });
   }
 
   maybeAutoOpenDrawerAttachment(drawerFrame) {
@@ -135,12 +156,14 @@ export default class extends Controller {
     this.unbindDrawerDialogClose();
     this.boundDialog = dialog;
     dialog.addEventListener("close", this.boundOnDrawerClose);
+    dialog.addEventListener("cancel", this.boundOnDialogCancel);
   }
 
   unbindDrawerDialogClose() {
     if (!this.boundDialog) return;
 
     this.boundDialog.removeEventListener("close", this.boundOnDrawerClose);
+    this.boundDialog.removeEventListener("cancel", this.boundOnDialogCancel);
     this.boundDialog = null;
   }
 
@@ -175,7 +198,7 @@ export default class extends Controller {
   }
 
   layout() {
-    const panel = this.panelElement();
+    const panel = viewerPanelElement();
     if (!panel) {
       this.syncHostPointerEvents();
       return;
@@ -227,10 +250,6 @@ export default class extends Controller {
     return slot;
   }
 
-  panelElement() {
-    return document.querySelector(PANEL_SELECTOR);
-  }
-
   drawerPanelElement() {
     const dialog = this.openDrawerDialog();
     if (!dialog) return null;
@@ -266,7 +285,7 @@ export default class extends Controller {
   }
 
   syncHostPointerEvents() {
-    if (this.panelElement()) {
+    if (viewerPanelElement()) {
       this.element.classList.remove("pointer-events-none");
     } else {
       this.element.classList.add("pointer-events-none");

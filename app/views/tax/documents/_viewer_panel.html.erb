@@ -14,13 +14,13 @@
             data: { turbo: false } do %>
         <%= icon("download", size: "sm") %>
       <% end %>
-      <%= link_to preview_clear_tax_documents_path,
-            class: "inline-flex items-center justify-center p-2 rounded-md text-primary hover:bg-surface-hover",
-            title: t("tax.documents.viewer.close"),
-            aria: { label: t("tax.documents.viewer.close") },
-            data: { turbo_frame: "document_viewer" } do %>
+      <button type="button"
+              class="inline-flex items-center justify-center p-2 rounded-md text-primary hover:bg-surface-hover"
+              title="<%= t("tax.documents.viewer.close") %>"
+              aria-label="<%= t("tax.documents.viewer.close") %>"
+              data-document-viewer-close>
         <%= icon("x", size: "sm") %>
-      <% end %>
+      </button>
     </div>
   </div>
   <div class="flex-1 min-h-0 bg-surface-inset">
