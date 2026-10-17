@@ -43,4 +43,26 @@ class Tax::PropertyCellSearchRankerTest < ActiveSupport::TestCase
     ranked = @ranker.rank([ super_payment, services ])
     assert_equal services.id, ranked.first.id
   end
+
+  test "ranks telstra services above super when super merchant is telstra" do
+    services = create_transaction(
+      account: @account,
+      date: Date.new(2025, 9, 15),
+      amount: 95,
+      currency: "AUD",
+      name: "TELSTRA SERVICES",
+      merchant: @telstra_services
+    )
+    super_payment = create_transaction(
+      account: @account,
+      date: Date.new(2025, 9, 22),
+      amount: 500,
+      currency: "AUD",
+      name: "TELSTRA SUPER PTYLTD BPAY",
+      merchant: @family.merchants.create!(name: "Telstra")
+    )
+
+    ranked = @ranker.rank([ super_payment, services ])
+    assert_equal services.id, ranked.first.id
+  end
 end

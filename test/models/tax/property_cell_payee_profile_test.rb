@@ -55,6 +55,18 @@ class Tax::PropertyCellPayeeProfileTest < ActiveSupport::TestCase
     refute @profile.matches_entry?(noise)
   end
 
+  test "does not treat utility energy retailers as internet payees" do
+    energy = create_transaction(
+      account: @account,
+      date: Date.new(2025, 10, 2),
+      amount: 250.17,
+      currency: "AUD",
+      name: "Ezi*Supa Energy $250.17"
+    )
+
+    refute @profile.matches_entry?(energy)
+  end
+
   test "does not treat telstra super as internet payee history" do
     super_payment = create_transaction(
       account: @account,

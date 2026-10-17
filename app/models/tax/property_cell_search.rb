@@ -38,6 +38,8 @@ module Tax
     end
 
     def fetch_results(query:, fy_filter:, account_id: nil)
+      return [] if query.blank? && account_id.blank?
+
       scope = base_scope
       scope = apply_fy_filter(scope, fy_filter)
       scope = apply_account_filter(scope, account_id)

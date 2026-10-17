@@ -2,7 +2,7 @@
 
 module Tax
   class PropertyCellSearchRanker
-    LOW_PRIORITY_NAME_PATTERN = /super|parking|paystay|spaceship|woolworths|chemist/i
+    LOW_PRIORITY_NAME_PATTERN = /super|parking|paystay|spaceship|woolworths|chemist|bpay|energy|electricity|\bgas\b|supa/i
 
     def initialize(payee_profile:, query:)
       @payee_profile = payee_profile
@@ -10,15 +10,22 @@ module Tax
     end
 
     def rank(entries)
-      entries.sort_by { |entry| [ -score(entry), -entry.date.to_time.to_i ] }
+      entries.sort_by do |entry|
+        history_match = @payee_profile.matches_entry?(entry)
+        [
+          history_match ? 0 : 1,
+          -@payee_profile.history_score_for(entry),
+          -relevance_score(entry),
+          -entry.date.to_time.to_i
+        ]
+      end
     end
 
-    def score(entry)
-      points = @payee_profile.history_score_for(entry)
-      points += text_match_score(entry)
+    def relevance_score(entry)
+      points = text_match_score(entry)
       points += outflow_score(entry)
       points += bill_size_score(entry)
-      points -= 40 if low_priority_name?(entry.name)
+      points -= 120 if low_priority_name?(entry.name)
       points
     end
 

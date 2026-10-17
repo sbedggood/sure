@@ -2,34 +2,33 @@
 
 module Tax
   class PropertyCellPayeeProfile
+    Fingerprint = Data.define(:merchant, :phrase)
+
     GENERIC_TOKENS = %w[
       card purchase debit credit eftpos pos payment visa mastercard amex
       withdraw transfer fee bpay ptyltd pty ltd melbourne vic nsw qld
       australia aud sa aust the and for from your
     ].freeze
 
-    DISQUALIFYING_TOKENS = %w[
-      super parking paystay spaceship woolworths chemist grouse almakan linkt
-    ].freeze
+    NOISE_NAME_PATTERN = /super|bpay|paystay|parking|spaceship|woolworths|chemist|grouse|almakan|linkt/i
+    UTILITY_NAME_PATTERN = /energy|electricity|\bgas\b|supa/i
 
-    attr_reader :merchants, :name_tokens
+    attr_reader :fingerprints
 
     def self.from_entries(entries)
-      merchants = []
-      name_tokens = Set.new
+      fingerprints = entries.filter_map { |entry| fingerprint_from(entry) }.uniq
+      new(fingerprints: fingerprints)
+    end
 
-      entries.each do |entry|
-        merchant = normalize_text(entry.transaction.merchant&.name)
-        merchants << merchant if merchant.present?
+    def self.fingerprint_from(entry)
+      merchant = normalize_text(entry.transaction.merchant&.name)
+      tokens = distinctive_tokens(normalize_text(entry.name))
+      phrase = tokens.first(3).join(" ")
+      phrase = nil if phrase.present? && phrase.length < 8
 
-        tokenize(entry.name).each { |token| name_tokens << token }
-        tokenize(merchant).each { |token| name_tokens << token }
-      end
+      return nil if merchant.blank? && phrase.blank?
 
-      new(
-        merchants: merchants.uniq,
-        name_tokens: name_tokens
-      )
+      Fingerprint.new(merchant: merchant.presence, phrase: phrase.presence)
     end
 
     def self.normalize_text(value)
@@ -42,72 +41,99 @@ module Tax
       end
     end
 
-    def initialize(merchants:, name_tokens:)
-      @merchants = merchants
-      @name_tokens = name_tokens
+    def self.distinctive_tokens(text)
+      tokenize(text)
+    end
+
+    def initialize(fingerprints:)
+      @fingerprints = fingerprints
     end
 
     def empty?
-      merchants.empty? && name_tokens.empty?
+      fingerprints.empty?
     end
 
     def matches_entry?(entry)
-      candidate_merchant = normalize_text(entry.transaction.merchant&.name)
-      candidate_name = normalize_text(entry.name)
+      return false if fingerprints.empty?
+      return false if noise_candidate?(entry)
 
-      return true if merchant_matches?(candidate_merchant)
-      return true if merchant_matches?(candidate_name)
-      return true if distinctive_name_match?(candidate_name)
-
-      false
+      fingerprints.any? { |fingerprint| matches_fingerprint?(entry, fingerprint) }
     end
 
     def history_score_for(entry)
+      return 0 unless matches_entry?(entry)
+
       score = 0
       candidate_merchant = normalize_text(entry.transaction.merchant&.name)
       candidate_name = normalize_text(entry.name)
 
-      score += 100 if merchants.include?(candidate_merchant)
-      score += 80 if merchants.any? { |ref| payee_substring_match?(candidate_merchant, ref) }
-      score += 70 if merchants.any? { |ref| payee_substring_match?(candidate_name, ref) }
-      score += 50 if distinctive_name_match?(candidate_name)
+      fingerprints.each do |fingerprint|
+        if fingerprint.merchant.present? && candidate_merchant == fingerprint.merchant
+          score = [ score, 120 ].max
+        elsif fingerprint.merchant.present? && candidate_name.include?(fingerprint.merchant)
+          score = [ score, 100 ].max
+        elsif fingerprint.phrase.present? && candidate_name.include?(fingerprint.phrase)
+          score = [ score, 90 ].max
+        elsif fingerprint.phrase.present? && candidate_merchant.present? && candidate_merchant.include?(fingerprint.phrase)
+          score = [ score, 85 ].max
+        end
+      end
+
       score
     end
 
     private
 
-      def merchant_matches?(value)
-        return false if value.blank?
+      def matches_fingerprint?(entry, fingerprint)
+        candidate_merchant = normalize_text(entry.transaction.merchant&.name)
+        candidate_name = normalize_text(entry.name)
 
-        merchants.any? { |reference| payee_substring_match?(value, reference) }
+        if fingerprint.merchant.present?
+          return true if candidate_merchant == fingerprint.merchant
+          return true if compatible_merchant_match?(candidate_merchant, fingerprint.merchant, candidate_name)
+          return true if candidate_name.include?(fingerprint.merchant) && compatible_name?(candidate_name, fingerprint.merchant)
+        end
+
+        if fingerprint.phrase.present?
+          return true if candidate_name.include?(fingerprint.phrase)
+          return true if candidate_merchant.present? && candidate_merchant.include?(fingerprint.phrase)
+        end
+
+        false
       end
 
-      def distinctive_name_match?(candidate_name)
-        return false if candidate_name.blank?
+      def compatible_merchant_match?(candidate_merchant, reference_merchant, candidate_name)
+        return false if candidate_merchant.blank?
 
-        candidate_tokens = distinctive_tokens(candidate_name)
-        return false if candidate_tokens.empty?
+        return true if candidate_merchant == reference_merchant
+        return false unless candidate_merchant.include?(reference_merchant) || reference_merchant.include?(candidate_merchant)
 
-        overlap = candidate_tokens & name_tokens.to_a
-        leftover = candidate_tokens - overlap
-        return false if overlap.size < 2 && leftover.any? { |token| DISQUALIFYING_TOKENS.include?(token) }
-
-        overlap.size >= 2 || overlap.any? { |token| token.length >= 8 }
+        compatible_name?(candidate_name, reference_merchant)
       end
 
-      def payee_substring_match?(left, right)
-        return false if left.blank? || right.blank?
+      def compatible_name?(candidate_name, reference_merchant)
+        return false if candidate_name.match?(NOISE_NAME_PATTERN)
+        return false if reference_merchant.include?("telstra") && candidate_name.match?(/super|bpay/)
+        return false if reference_merchant.include?("telecom") && candidate_name.match?(UTILITY_NAME_PATTERN)
 
-        return true if left == right
-
-        longer, shorter = [ left, right ].sort_by(&:length).reverse
-        return false if shorter.length < 5
-
-        longer.include?(shorter)
+        true
       end
 
-      def distinctive_tokens(text)
-        self.class.tokenize(text)
+      def noise_candidate?(entry)
+        name = normalize_text(entry.name)
+        return true if name.match?(NOISE_NAME_PATTERN)
+        return true if utility_noise?(name)
+
+        false
+      end
+
+      def utility_noise?(name)
+        return false unless name.match?(UTILITY_NAME_PATTERN)
+
+        fingerprints.none? do |fingerprint|
+          fingerprint.phrase&.match?(UTILITY_NAME_PATTERN) ||
+            fingerprint.merchant&.match?(UTILITY_NAME_PATTERN)
+        end
       end
 
       def normalize_text(value)
