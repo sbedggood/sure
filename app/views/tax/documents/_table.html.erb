@@ -84,7 +84,7 @@
                       class: "text-xs shrink-0"
                     ) %>
                 <% if row.tax_document_id %>
-                  <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id),
+                  <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id, return_to: return_to),
                         title: t("tax.documents_all.link"),
                         aria: { label: t("tax.documents_all.link") },
                         data: { turbo_frame: "drawer" } do %>

@@ -1,4 +1,4 @@
-<%# locals: (search_results:, document:, candidate_query:, fy_filter:, account_id:) %>
+<%# locals: (search_results:, document:, candidate_query:, fy_filter:, account_id:, return_to: nil) %>
 <%= turbo_frame_tag "document_link_search" do %>
   <% if search_results.any? %>
     <div class="divide-y divide-subdued bg-container-inset rounded-lg">
@@ -17,8 +17,8 @@
           </p>
           <%= button_to t("tax.property.link"),
                 tax_document_link_create_path(tax_document_id: document.id),
-                params: { entry_id: entry.id },
-                form: { data: { turbo_stream: true } },
+                params: { entry_id: entry.id, return_to: return_to },
+                form: { data: { turbo_frame: "_top" } },
                 class: "text-xs font-medium text-accent shrink-0" %>
         </div>
       <% end %>

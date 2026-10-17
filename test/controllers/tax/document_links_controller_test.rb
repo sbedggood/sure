@@ -30,10 +30,13 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show includes fy filter default and search results with amount" do
-    get tax_document_link_path(tax_document_id: @document.id)
+    return_to = tax_documents_path(sort: "date", direction: "desc")
+    get tax_document_link_path(tax_document_id: @document.id, return_to: return_to)
 
     assert_response :success
     assert_match "document_link_search", response.body
+    assert_match "data-turbo-frame=\"_top\"", response.body
+    assert_match CGI.escapeHTML(return_to), response.body
     assert_match "Salary", response.body
     assert_match @entry.amount_money.abs.format, response.body
     assert_match "FY", response.body
@@ -55,15 +58,29 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
     refute_match "Unrelated purchase", response.body
   end
 
-  test "create links document as transaction attachment via turbo stream" do
+  test "create links document as transaction attachment and redirects back to documents" do
+    return_to = tax_documents_path(doc_type: "all", sort: "date", direction: "desc")
+
     post tax_document_link_create_path(tax_document_id: @document.id),
-      params: { entry_id: @entry.id },
+      params: { entry_id: @entry.id, return_to: return_to },
       as: :turbo_stream
 
     assert_response :success
     assert_not TaxDocument.exists?(@document.id)
     assert @entry.transaction.attachments.attached?
-    assert_match "transaction_attachments_#{@entry.transaction.id}", response.body
-    assert_match "payslip.pdf", response.body
+    assert_includes response.body, "action=\"redirect\""
+    assert_match %r{target="/tax/documents\?}, response.body
+    assert_includes response.body, "sort=date"
+  end
+
+  test "create links document with html redirect when opened from documents index" do
+    return_to = tax_documents_path
+
+    post tax_document_link_create_path(tax_document_id: @document.id),
+      params: { entry_id: @entry.id, return_to: return_to }
+
+    assert_redirected_to return_to
+    assert_not TaxDocument.exists?(@document.id)
+    assert @entry.transaction.attachments.attached?
   end
 end

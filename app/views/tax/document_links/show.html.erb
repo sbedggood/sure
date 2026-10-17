@@ -29,7 +29,7 @@
       <div class="space-y-3">
         <p class="text-xs font-medium text-secondary uppercase"><%= t("recurring_occurrences.show.find_heading") %></p>
 
-        <%= styled_form_with url: tax_document_link_path(tax_document_id: @document.id),
+        <%= styled_form_with url: tax_document_link_path(tax_document_id: @document.id, return_to: @return_to),
               method: :get,
               data: { controller: "auto-submit-form", turbo_frame: "document_link_search" },
               class: "space-y-3" do |form| %>
@@ -73,7 +73,8 @@
               document: @document,
               candidate_query: @candidate_query,
               fy_filter: @fy_filter,
-              account_id: @account_id %>
+              account_id: @account_id,
+              return_to: @return_to %>
       </div>
     </div>
   <% end %>

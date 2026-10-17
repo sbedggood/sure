@@ -6,6 +6,7 @@ module Tax
 
     def show
       @document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
+      @return_to = params[:return_to].presence
       @candidate_query = params[:q]
       @fy_filter = if params.key?(:fy)
         params[:fy].presence || "all"
@@ -27,14 +28,11 @@ module Tax
       document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
       entry = Current.accessible_entries.find(params[:entry_id])
       DocumentLinker.new(family: Current.family).link_to_entry!(tax_document: document, entry: entry)
+      target = document_link_return_to
 
       respond_to do |format|
-        format.html do
-          redirect_to entry_path(entry), notice: t("tax.documents.linked")
-        end
-        format.turbo_stream do
-          render turbo_stream: attachment_refresh_stream(entry)
-        end
+        format.html { redirect_to target, notice: t("tax.documents.linked") }
+        format.turbo_stream { render turbo_stream: turbo_stream.action(:redirect, target) }
       end
     end
 
@@ -77,21 +75,19 @@ module Tax
         end.reverse
       end
 
-      def attachment_refresh_stream(entry)
-        turbo_stream.replace(
-          "transaction_attachments_#{entry.transaction.id}",
-          partial: "transactions/attachments",
-          locals: attachment_locals_for(entry)
-        )
+      def document_link_return_to
+        safe_return_path(params[:return_to].presence || request.referer)
       end
 
-      def attachment_locals_for(entry)
-        permission = entry.account.permission_for(Current.user)
-        {
-          transaction: entry.transaction,
-          can_upload: permission.in?([ :owner, :full_control, :read_write ]),
-          can_delete: permission.in?([ :owner, :full_control ])
-        }
+      def safe_return_path(path)
+        return tax_documents_path if path.blank?
+
+        uri = URI.parse(path)
+        return tax_documents_path unless uri.host.nil? && path.start_with?("/")
+
+        path
+      rescue URI::InvalidURIError
+        tax_documents_path
       end
   end
 end
