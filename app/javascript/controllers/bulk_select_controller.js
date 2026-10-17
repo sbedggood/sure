@@ -38,9 +38,10 @@ export default class extends Controller {
   submitBulkRequest(e) {
     const form = e.target.closest("form");
     const scope = e.params.scope;
+    const paramName = scope ? `${scope}[entry_ids][]` : "entry_ids[]";
     this._addHiddenFormInputsForSelectedIds(
       form,
-      `${scope}[entry_ids][]`,
+      paramName,
       this.selectedIdsValue,
     );
     form.requestSubmit();

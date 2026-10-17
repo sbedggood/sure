@@ -1,0 +1,67 @@
+<%# locals: (financial_year:, settings:, deductions:) %>
+<% data = Tax::Summary.new(family: Current.family, start_year: financial_year.start_year).as_json[:deductions] %>
+
+<div class="rounded-xl bg-container-inset p-4 mb-4 space-y-3">
+  <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <%= hidden_field_tag :return_section, "deductions" %>
+    <%= form.number_field "tax_fy_setting[wfh_hourly_rate]", label: t("tax.deductions.wfh_rate"), value: settings.wfh_hourly_rate, step: 0.01, class: "max-w-[8rem]" %>
+    <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01, class: "max-w-[8rem]" %>
+    <%= render DS::Button.new(text: t("tax.property.save_settings"), type: "submit") %>
+  <% end %>
+  <p class="text-sm text-secondary">
+    <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>
+    <%= number_to_currency(data[:home_office][:claim]) %>
+    <span class="mx-2">·</span>
+    <span class="text-primary font-medium"><%= t("tax.deductions.car") %>:</span>
+    <%= number_to_currency(data[:car][:claim]) %>
+  </p>
+</div>
+
+<div class="rounded-xl bg-container-inset space-y-1 p-1 mb-4">
+  <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+    <div class="text-sm text-secondary">
+      <span class="text-primary font-medium"><%= t("tax.deductions.claim") %>:</span>
+      <%= number_to_currency(deductions.claimable_grand_total) %>
+    </div>
+    <% if deductions.for_review_group %>
+      <div class="text-sm text-secondary">
+        <span class="font-medium text-warning"><%= t("tax.deductions.pending_review") %>:</span>
+        <%= number_to_currency(deductions.pending_for_review_total.abs) %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div id="tax-deductions"
+  data-controller="bulk-select checkbox-toggle"
+  data-bulk-select-singular-label-value="<%= t("tax.deductions.entry") %>"
+  data-bulk-select-plural-label-value="<%= t("tax.deductions.entries") %>"
+  data-bulk-select-selected-label-value="<%= t("transactions.selection_bar.selected") %>"
+  class="flex flex-col bg-container rounded-xl shadow-border-xs px-3 py-4 lg:p-4 relative">
+
+  <div id="tax-deduction-selection-bar" data-bulk-select-target="selectionBar" class="flex justify-center hidden mb-4">
+    <%= render "tax/dashboard/deduction_selection_bar", deductions: deductions, financial_year: financial_year %>
+  </div>
+
+  <div class="grid-cols-12 bg-container-inset rounded-xl px-5 py-3 text-xs uppercase font-medium text-secondary items-center mb-4 hidden lg:grid">
+    <div class="pl-0.5 col-span-5"><%= t("tax.deductions.columns.name") %></div>
+    <div class="col-span-3 text-center"><%= t("tax.deductions.columns.category") %></div>
+    <div class="col-span-4 text-right"><%= t("tax.deductions.columns.amount") %></div>
+  </div>
+
+  <div class="space-y-6">
+    <% deductions.claim_groups.each do |group| %>
+      <%= render "tax/dashboard/deduction_tag_group", group: group, financial_year: financial_year, for_review: false, settings: settings, deductions: deductions %>
+    <% end %>
+    <% if deductions.for_review_group %>
+      <div class="border-t border-divider pt-6">
+        <p class="text-xs font-medium text-warning uppercase px-1 mb-3"><%= t("tax.deductions.for_review_heading") %></p>
+        <%= render "tax/dashboard/deduction_tag_group", group: deductions.for_review_group, financial_year: financial_year, for_review: true, settings: settings, deductions: deductions %>
+      </div>
+    <% end %>
+    <% if deductions.groups.empty? %>
+      <p class="text-sm text-secondary text-center py-8 font-medium"><%= t("tax.deductions.empty") %></p>
+    <% end %>
+  </div>
+</div>

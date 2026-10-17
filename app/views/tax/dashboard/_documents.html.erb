@@ -1,0 +1,12 @@
+<%# locals: (financial_year:, document_rows:, doc_scope: "fy", doc_type: "all") %>
+<% rows = document_rows.presence || Tax::DocumentCatalog.new(family: Current.family).rows_for_fy(financial_year.start_year) %>
+
+<%= render "tax/documents/section",
+      rows: rows,
+      financial_year: financial_year,
+      doc_scope: doc_scope,
+      doc_type: doc_type,
+      upload_start_year: financial_year.start_year,
+      return_to: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: doc_scope, doc_type: doc_type),
+      show_scope_filter: true,
+      show_fy_filter: false %>

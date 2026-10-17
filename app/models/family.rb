@@ -72,6 +72,10 @@ class Family < ApplicationRecord
 
   has_many :goals, dependent: :destroy
 
+  has_many :tax_fy_settings, dependent: :destroy
+  has_many :tax_weekly_calendar_entries, dependent: :destroy
+  has_many :tax_documents, dependent: :destroy
+
   # Net inflow into every depository account linked to any primary-currency
   # goal, over the given window. Transfers between linked accounts net to zero
   # because both sides of an internal move land inside the same account set;

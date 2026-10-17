@@ -1,0 +1,87 @@
+<%# locals: (
+      rows:,
+      financial_year: nil,
+      doc_scope: "fy",
+      doc_type: "all",
+      upload_start_year:,
+      return_to:,
+      show_scope_filter: true,
+      show_fy_filter: false,
+      fy_filter: nil,
+      fy_options: []
+    ) %>
+<% filtered_rows = if doc_type.present? && doc_type != "all"
+     rows.select { |r| r.document_type == doc_type }
+   else
+     rows
+   end %>
+
+<div class="rounded-xl bg-container-inset space-y-1 p-1">
+  <div class="flex flex-col gap-3 px-4 py-3 border-b border-subdued">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-1.5 text-xs font-medium text-secondary uppercase">
+        <p><%= t("tax.documents_all.title") %></p>
+        <span class="text-subdued">&middot;</span>
+        <p><%= filtered_rows.size %></p>
+      </div>
+      <%= render DS::Link.new(
+            text: t("tax.documents.upload"),
+            icon: "plus",
+            variant: "primary",
+            href: new_tax_document_path(start_year: upload_start_year, return_to: return_to),
+            frame: :modal,
+            class: "shrink-0"
+          ) %>
+    </div>
+
+    <div class="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+      <% if show_scope_filter && financial_year %>
+        <%= render DS::SegmentedControl.new(aria_label: t("tax.documents.scope_aria"), class: "bg-surface-inset max-w-md") do |control| %>
+          <% control.with_segment(
+               t("tax.documents.scope_fy", fy: financial_year.label),
+               active: doc_scope == "fy",
+               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "fy", doc_type: doc_type)
+             ) %>
+          <% control.with_segment(
+               t("tax.documents.scope_all"),
+               active: doc_scope == "all",
+               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "all", doc_type: doc_type)
+             ) %>
+        <% end %>
+      <% end %>
+
+      <% if show_fy_filter %>
+        <%= form_with url: tax_documents_path, method: :get, data: { controller: "auto-submit-form", turbo_frame: "_top" }, class: "min-w-[12rem]" do |f| %>
+          <%= hidden_field_tag :doc_type, doc_type %>
+          <%= render DS::Select.new(
+                form: f,
+                method: :doc_fy,
+                items: [ { label: t("tax.documents_all.all_fys"), value: "" } ] + fy_options.map { |label, value| { label: label, value: value } },
+                selected: fy_filter,
+                label: t("tax.documents_all.filter_fy")
+              ) %>
+        <% end %>
+      <% end %>
+
+      <%= render DS::SegmentedControl.new(aria_label: t("tax.documents.type_aria"), class: "bg-surface-inset overflow-x-auto no-scrollbar") do |control| %>
+        <% type_base = show_fy_filter ? { doc_fy: fy_filter } : { start_year: financial_year.start_year, section: "documents", doc_scope: doc_scope } %>
+        <% type_path = ->(type) { show_fy_filter ? tax_documents_path(**type_base, doc_type: type) : tax_dashboard_path(**type_base, doc_type: type) } %>
+        <% control.with_segment(t("tax.documents.type_all"), active: doc_type == "all", href: type_path.call("all"), class: "whitespace-nowrap px-3") %>
+        <% TaxDocument::DOCUMENT_TYPES.each do |type| %>
+          <% control.with_segment(
+               t("tax.documents.types.#{type}", default: type.humanize),
+               active: doc_type == type,
+               href: type_path.call(type),
+               class: "whitespace-nowrap px-3"
+             ) %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%= render "tax/documents/table",
+        rows: filtered_rows,
+        show_transaction_columns: true,
+        upload_start_year: upload_start_year,
+        return_to: return_to %>
+</div>

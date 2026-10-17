@@ -1,0 +1,18 @@
+<% content_for :title, t("tax.documents_all.page_title") %>
+
+<div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
+  <header class="flex justify-between items-center gap-4 text-primary font-medium">
+    <h1 class="text-xl"><%= t("tax.documents_all.page_title") %></h1>
+  </header>
+
+  <%= render "tax/documents/section",
+        rows: @rows,
+        doc_scope: "all",
+        doc_type: @doc_type,
+        upload_start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
+        return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type),
+        show_scope_filter: false,
+        show_fy_filter: true,
+        fy_filter: @fy_filter,
+        fy_options: @fy_options %>
+</div>

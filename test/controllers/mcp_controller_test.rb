@@ -319,6 +319,9 @@ class McpControllerTest < ActionDispatch::IntegrationTest
       assert_includes tool_names, "get_income_statement"
       assert_includes tool_names, "update_transaction"
       assert_includes tool_names, "update_budget"
+      Tax::McpTools::NAMES.each do |tax_tool|
+        assert_includes tool_names, tax_tool
+      end
 
       # Each tool has required fields
       tools.each do |tool|

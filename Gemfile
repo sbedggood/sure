@@ -89,6 +89,7 @@ gem "webauthn", "~> 3.4"
 gem "websocket-driver", "~> 0.8"
 gem "activerecord-import"
 gem "rubyzip", "~> 3.4"
+gem "caxlsx"
 gem "pdf-reader", "~> 2.12"
 
 # OpenID Connect, OAuth & SAML authentication

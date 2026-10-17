@@ -1,0 +1,15 @@
+<div class="fixed bottom-[calc(5rem_+_env(safe-area-inset-bottom))] md:bottom-6 z-50 flex flex-col md:flex-row items-center gap-2 rounded-xl bg-surface-inset border-secondary shadow-border-xs px-4 text-sm text-primary md:w-auto w-[90%] py-2">
+  <div class="flex items-center gap-2">
+    <%= check_box_tag "tax_entry_selection", 1, true, class: "checkbox checkbox--light", data: { action: "bulk-select#deselectAll" } %>
+    <p data-bulk-select-target="selectionBarText"></p>
+  </div>
+
+  <%= form_with url: tax_deduction_bulk_tags_path, method: :post, class: "flex flex-wrap items-center gap-2" do %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <%= select_tag :replace_tag_id, options_from_collection_for_select(deductions.tax_tags_for_select, :id, :name), include_blank: t("tax.deductions.move_from"), class: "rounded-md border border-primary bg-container px-2 py-1 text-sm max-w-40" %>
+    <%= select_tag :new_tag_id, options_from_collection_for_select(deductions.tax_tags_for_select, :id, :name), include_blank: t("tax.deductions.move_to"), class: "rounded-md border border-primary bg-container px-2 py-1 text-sm max-w-40" %>
+    <%= select_tag :add_tag_id, options_from_collection_for_select(deductions.tax_tags_for_select, :id, :name), include_blank: t("tax.deductions.add_tag"), class: "rounded-md border border-primary bg-container px-2 py-1 text-sm max-w-36" %>
+    <%= select_tag :remove_tag_id, options_from_collection_for_select(deductions.tax_tags_for_select, :id, :name), include_blank: t("tax.deductions.remove_tag"), class: "rounded-md border border-primary bg-container px-2 py-1 text-sm max-w-36" %>
+    <%= submit_tag t("tax.deductions.apply_tags"), class: "text-sm font-medium text-accent", data: { action: "bulk-select#submitBulkRequest" } %>
+  <% end %>
+</div>
