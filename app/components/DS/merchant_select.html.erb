@@ -21,11 +21,7 @@
               <%= "disabled" if disabled %>>
         <span data-merchant-select-target="selectionContainer" class="flex items-center gap-2 truncate">
           <% if selected_merchant %>
-            <% if selected_merchant_logo_url %>
-              <%= image_tag selected_merchant_logo_url, class: "w-5 h-5 rounded-full border border-secondary shrink-0", loading: "lazy" %>
-            <% else %>
-              <%= render DS::FilledIcon.new(variant: :text, text: selected_merchant.name, size: "sm", rounded: true) %>
-            <% end %>
+            <%= render MerchantLogo.new(merchant: selected_merchant, size: :xs, class_name: "border border-secondary shrink-0") %>
             <span class="truncate"><%= selected_merchant.name %></span>
           <% else %>
             <span class="text-secondary"><%= include_blank %></span>

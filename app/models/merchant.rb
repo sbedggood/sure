@@ -1,4 +1,6 @@
 class Merchant < ApplicationRecord
+  include MerchantLogoAttachable
+
   TYPES = %w[FamilyMerchant ProviderMerchant].freeze
 
   # Merchant name key for i18n

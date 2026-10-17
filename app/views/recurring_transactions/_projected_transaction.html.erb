@@ -5,18 +5,7 @@
     <div class="max-w-full">
       <%= content_tag :div, class: ["flex items-center gap-3 lg:gap-4"] do %>
         <% if recurring_transaction.merchant.present? %>
-          <% if recurring_transaction.merchant.logo_url.present? %>
-            <%= image_tag Setting.transform_brand_fetch_url(recurring_transaction.merchant.logo_url),
-                class: "w-9 h-9 rounded-full",
-                loading: "lazy" %>
-          <% else %>
-            <%= render DS::FilledIcon.new(
-              variant: :text,
-              text: recurring_transaction.merchant.name,
-              size: "lg",
-              rounded: true
-            ) %>
-          <% end %>
+          <%= render MerchantLogo.new(merchant: recurring_transaction.merchant, size: :lg) %>
         <% else %>
           <%= render DS::FilledIcon.new(
             variant: :text,

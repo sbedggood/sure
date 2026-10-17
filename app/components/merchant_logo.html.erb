@@ -1,0 +1,15 @@
+<%= tag.span class: container_class do %>
+  <%= tag.span class: "absolute inset-0", aria: { hidden: true } do %>
+    <%= render DS::FilledIcon.new(
+          variant: :text,
+          text: merchant.name,
+          hex_color: merchant.fallback_logo_color,
+          size: size_config[:icon],
+          rounded: size_config[:rounded],
+          class_name: class_names("w-full h-full", rounded_class)
+        ) %>
+  <% end %>
+  <% if (url = remote_url) %>
+    <%= helpers.image_tag url, class: image_class, alt: "", loading: "lazy", onerror: MerchantLogo::REMOVE_ON_ERROR %>
+  <% end %>
+<% end %>

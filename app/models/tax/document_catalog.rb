@@ -106,7 +106,7 @@ module Tax
           entry_amount: entry.amount,
           account_name: entry.account.name,
           entry_date: entry.date,
-          merchant_logo_url: transaction.merchant&.logo_url
+          merchant_logo_url: transaction.merchant&.display_logo_path
         }
       end
 
