@@ -44,13 +44,22 @@ module Tax
             sheet.add_row([ row[:label] ] + values + [ row[:total] ])
           end
 
-          sheet.add_row([ "Total" ] + Array.new(months.length, nil) + [ property[:cost_total] ], style: bold)
+          month_totals = property[:months].map do |month_key|
+            property[:expense_rows].sum { |row| row[:months][month_key] || 0 }
+          end
+          sheet.add_row([ "Total" ] + month_totals + [ property[:cost_total] ], style: bold)
           sheet.add_row([])
           sheet.add_row([ "% allocation", property[:property_allocation_percent] ])
           sheet.add_row([ "Allocated costs", property[:allocated_costs] ])
           sheet.add_row([ "Rent", property[:rental_income][:total] ])
-          sheet.add_row([ "Difference", property[:difference] ])
-          sheet.add_row([ "Expected return", property[:expected_return] ])
+          sheet.add_row([ "Net rental", property[:net_rental] || property[:difference] ])
+          tax = property[:expected_tax] || {}
+          tax_label = case tax[:kind]
+          when "refund" then "Expected tax refund"
+          when "payable" then "Expected tax payable"
+          else "Property tax effect"
+          end
+          sheet.add_row([ tax_label, tax[:amount] || property[:expected_return] ])
         end
       end
 

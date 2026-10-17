@@ -1,51 +1,24 @@
 <%# locals: (financial_year:, settings:, summary:, property_grid:) %>
 <% property = summary.as_json[:property] %>
+<% expense_rows = property[:expense_rows] %>
+<% month_keys = property_grid.months.map(&:iso8601) %>
+<% monthly_expense_totals = month_keys.index_with do |key|
+     expense_rows.sum { |row| BigDecimal((row[:months][key] || 0).to_s) }
+   end %>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-  <div class="bg-container-inset rounded-lg p-4">
-    <div class="flex items-center gap-2 mb-3">
-      <%= icon("receipt", size: "sm") %>
-      <span class="text-sm text-secondary"><%= t("tax.property.total_costs") %></span>
-    </div>
-    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:cost_total]) %></p>
-  </div>
-  <div class="bg-container-inset rounded-lg p-4">
-    <div class="flex items-center gap-2 mb-3">
-      <%= icon("pie-chart", size: "sm") %>
-      <span class="text-sm text-secondary"><%= t("tax.property.allocated", percent: property[:property_allocation_percent]) %></span>
-    </div>
-    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:allocated_costs]) %></p>
-  </div>
-  <div class="bg-container-inset rounded-lg p-4">
-    <div class="flex items-center gap-2 mb-3">
-      <%= icon("home", size: "sm") %>
-      <span class="text-sm text-secondary"><%= t("tax.property.rent_total") %></span>
-    </div>
-    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:rental_income][:total]) %></p>
-  </div>
-  <div class="bg-container-inset rounded-lg p-4">
-    <div class="flex items-center gap-2 mb-3">
-      <%= icon("scale", size: "sm") %>
-      <span class="text-sm text-secondary"><%= t("tax.property.difference") %></span>
-    </div>
-    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:difference]) %></p>
-  </div>
-  <div class="bg-container-inset rounded-lg p-4">
-    <div class="flex items-center gap-2 mb-3">
-      <%= icon("percent", size: "sm") %>
-      <span class="text-sm text-secondary"><%= t("tax.property.expected_return") %></span>
-    </div>
-    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:expected_return]) %></p>
-  </div>
-</div>
+<%= render "tax/dashboard/property_stat_cards", property: property %>
 
-<div class="bg-container rounded-xl shadow-border-xs p-4 mb-4">
-  <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
+<div class="bg-container rounded-xl shadow-border-xs p-4 mb-4 mt-4">
+  <%= styled_form_with url: tax_settings_path, method: :patch, class: "space-y-4" do |form| %>
     <%= hidden_field_tag :start_year, financial_year.start_year %>
     <%= hidden_field_tag :return_section, "property" %>
-    <%= form.number_field "tax_fy_setting[property_allocation_percent]", label: t("tax.property.allocation"), value: settings.property_allocation_percent, step: 0.01, class: "max-w-[8rem]" %>
-    <%= form.number_field "tax_fy_setting[marginal_tax_rate_percent]", label: t("tax.property.marginal_rate"), value: settings.marginal_tax_rate_percent, step: 0.01, class: "max-w-[8rem]" %>
-    <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <%= form.number_field "tax_fy_setting[property_allocation_percent]", label: t("tax.property.allocation"), value: settings.property_allocation_percent, step: 0.01 %>
+      <%= form.number_field "tax_fy_setting[marginal_tax_rate_percent]", label: t("tax.property.marginal_rate"), value: settings.marginal_tax_rate_percent, step: 0.01 %>
+    </div>
+    <div class="flex justify-end">
+      <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
+    </div>
   <% end %>
 </div>
 
@@ -68,9 +41,14 @@
         </tr>
       </thead>
       <tbody>
-        <% property[:expense_rows].each do |row| %>
+        <% expense_rows.each do |row| %>
           <tr class="border-b border-subdued hover:bg-surface-hover">
-            <td class="px-3 py-3 text-sm font-medium text-primary"><%= row[:label] %></td>
+            <td class="px-3 py-3 text-sm font-medium text-primary">
+              <span><%= row[:label] %></span>
+              <% if row[:capital_improvement] %>
+                <p class="text-xs font-normal text-secondary mt-0.5"><%= t("tax.property.improvements_note") %></p>
+              <% end %>
+            </td>
             <% property_grid.months.each do |month| %>
               <% amount = row[:months][month.iso8601] || 0 %>
               <td class="px-3 py-3 text-sm text-right">
@@ -87,6 +65,14 @@
             <td class="px-3 py-3 text-sm text-right font-medium text-primary privacy-sensitive"><%= number_to_currency(row[:total]) %></td>
           </tr>
         <% end %>
+        <tr class="border-t border-divider bg-container-inset font-medium">
+          <td class="px-3 py-3 text-sm text-primary"><%= t("tax.property.total") %></td>
+          <% property_grid.months.each do |month| %>
+            <% total = monthly_expense_totals[month.iso8601] %>
+            <td class="px-3 py-3 text-sm text-right text-primary privacy-sensitive"><%= number_to_currency(total) %></td>
+          <% end %>
+          <td class="px-3 py-3 text-sm text-right text-primary privacy-sensitive"><%= number_to_currency(property[:cost_total]) %></td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -127,4 +113,3 @@
     </table>
   </div>
 </div>
-

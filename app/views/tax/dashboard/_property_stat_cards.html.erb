@@ -1,0 +1,51 @@
+<%# locals: (property:) %>
+<% tax = property[:expected_tax] || { kind: "none", amount: property[:expected_return] } %>
+<% tax_label = case tax[:kind]
+     when "refund" then t("tax.property.expected_tax_refund")
+     when "payable" then t("tax.property.expected_tax_payable")
+     else t("tax.property.expected_tax_none")
+   end %>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <%= icon("receipt", size: "sm") %>
+      <span class="text-sm text-secondary"><%= t("tax.property.total_costs") %></span>
+    </div>
+    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:cost_total]) %></p>
+  </div>
+
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <%= icon("pie-chart", size: "sm") %>
+      <span class="text-sm text-secondary"><%= t("tax.property.allocated", percent: property[:property_allocation_percent]) %></span>
+    </div>
+    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:allocated_costs]) %></p>
+  </div>
+
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <%= icon("home", size: "sm") %>
+      <span class="text-sm text-secondary"><%= t("tax.property.rent_total") %></span>
+    </div>
+    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:rental_income][:total]) %></p>
+  </div>
+
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <%= icon("scale", size: "sm") %>
+      <span class="text-sm text-secondary"><%= t("tax.property.net_rental") %></span>
+    </div>
+    <p class="text-xl font-semibold text-primary privacy-sensitive"><%= number_to_currency(property[:net_rental] || property[:difference]) %></p>
+  </div>
+
+  <div class="bg-container rounded-xl shadow-border-xs p-4">
+    <div class="flex items-center gap-2 mb-3">
+      <%= icon("percent", size: "sm") %>
+      <span class="text-sm text-secondary"><%= tax_label %></span>
+    </div>
+    <p class="text-xl font-semibold text-primary privacy-sensitive">
+      <%= tax[:kind] == "none" ? "—" : number_to_currency(tax[:amount]) %>
+    </p>
+  </div>
+</div>

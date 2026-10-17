@@ -97,4 +97,87 @@ class Tax::SummaryTest < ActiveSupport::TestCase
     assert_equal 3000.0, summary.dig(:property, :rental_income, :total)
     assert_equal 380.0, summary.dig(:property, :cost_total)
   end
+
+  test "property totals exclude electricity and non-schedule property tags" do
+    electricity = @family.tags.create!(name: "Tax: Property - Electricity", color: "#6471eb")
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 10),
+      amount: 99,
+      currency: "AUD",
+      name: "Power bill",
+      tags: [ electricity ]
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    assert_equal 200.0, summary.dig(:property, :cost_total)
+    assert_nil summary.dig(:property, :expense_rows).find { |r| r[:tag] == electricity.name }
+  end
+
+  test "net rental profit yields expected tax payable" do
+    @family.tax_fy_settings.find_by(start_year: @start_year).update!(
+      property_allocation_percent: 100,
+      marginal_tax_rate_percent: 47
+    )
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 2),
+      amount: -10_000,
+      currency: "AUD",
+      name: "Extra rent",
+      tags: [ @rent_tag ]
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    property = summary[:property]
+
+    assert_equal 11_500.0, property[:rental_income][:total]
+    assert_equal 200.0, property[:cost_total]
+    assert_equal 11_300.0, property[:net_rental]
+    assert_equal "payable", property[:expected_tax][:kind]
+    assert_in_delta 5_311.0, property[:expected_tax][:amount], 0.01
+  end
+
+  test "net rental loss yields positive expected tax refund" do
+    @family.tax_fy_settings.find_by(start_year: @start_year).update!(
+      property_allocation_percent: 100,
+      marginal_tax_rate_percent: 50
+    )
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 3),
+      amount: 30_000,
+      currency: "AUD",
+      name: "Large interest",
+      tags: [ @interest_tag ]
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    property = summary[:property]
+
+    assert_equal 1_500.0, property[:rental_income][:total]
+    assert_equal 30_200.0, property[:cost_total]
+    assert_equal(-28_700.0, property[:net_rental])
+    assert_equal "refund", property[:expected_tax][:kind]
+    assert_in_delta 14_350.0, property[:expected_tax][:amount], 0.01
+  end
+
+  test "allocated costs apply allocation percent to expense total" do
+    @family.tax_fy_settings.find_by(start_year: @start_year).update!(
+      property_allocation_percent: 50,
+      marginal_tax_rate_percent: 47
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    property = summary[:property]
+
+    assert_equal 200.0, property[:cost_total]
+    assert_equal 100.0, property[:allocated_costs]
+    assert_equal 1_400.0, property[:net_rental]
+    assert_equal "payable", property[:expected_tax][:kind]
+    assert_in_delta 658.0, property[:expected_tax][:amount], 0.01
+  end
 end

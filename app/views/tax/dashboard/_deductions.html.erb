@@ -2,15 +2,19 @@
 <% data = Tax::Summary.new(family: Current.family, start_year: financial_year.start_year).as_json[:deductions] %>
 
 <div class="bg-container rounded-xl shadow-border-xs p-4 mb-4 space-y-4">
-  <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
+  <%= styled_form_with url: tax_settings_path, method: :patch, class: "space-y-4" do |form| %>
     <%= hidden_field_tag :start_year, financial_year.start_year %>
     <%= hidden_field_tag :return_section, "deductions" %>
-    <%= form.number_field "tax_fy_setting[wfh_hourly_rate]", label: t("tax.deductions.wfh_rate"), value: settings.wfh_hourly_rate, step: 0.01, class: "max-w-[8rem]" %>
-    <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01, class: "max-w-[8rem]" %>
-    <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <%= form.number_field "tax_fy_setting[wfh_hourly_rate]", label: t("tax.deductions.wfh_rate"), value: settings.wfh_hourly_rate, step: 0.01 %>
+      <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01 %>
+    </div>
+    <div class="flex justify-end">
+      <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
+    </div>
   <% end %>
 
-  <p class="text-sm text-secondary">
+  <p class="text-sm text-secondary border-t border-subdued pt-4">
     <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>
     <%= number_to_currency(data[:home_office][:claim]) %>
     <span class="mx-2">·</span>

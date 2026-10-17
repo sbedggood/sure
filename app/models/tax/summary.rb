@@ -53,6 +53,7 @@ module Tax
           {
             tag: tag_name,
             label: tag_name.sub("Tax: Property - ", ""),
+            capital_improvement: tag_name == "Tax: Property - Improvements",
             months: monthly.transform_keys { |d| d.iso8601 }.transform_values(&:to_f),
             total: total.to_f
           }
@@ -70,9 +71,8 @@ module Tax
         rent_total = rent_by_month.values.sum
         allocation = settings.property_allocation_percent / 100
         allocated_costs = cost_total * allocation
-        difference = rent_total - allocated_costs
-        marginal = settings.marginal_tax_rate_percent / 100
-        expected_return = difference * marginal
+        net_rental = rent_total - allocated_costs
+        tax_position = property_tax_position(net_rental, settings.marginal_tax_rate_percent)
 
         {
           months: months.map(&:iso8601),
@@ -88,9 +88,25 @@ module Tax
           cost_total: cost_total.to_f,
           property_allocation_percent: settings.property_allocation_percent.to_f,
           allocated_costs: allocated_costs.to_f,
-          difference: difference.to_f,
-          expected_return: expected_return.to_f
+          net_rental: net_rental.to_f,
+          difference: net_rental.to_f,
+          expected_tax: tax_position,
+          expected_return: tax_position[:amount].to_f
         }
+      end
+
+      # Net rental loss → positive refund (tax benefit); net profit → positive payable.
+      def property_tax_position(net_rental, marginal_tax_rate_percent)
+        marginal = BigDecimal(marginal_tax_rate_percent.to_s) / 100
+        amount = net_rental.abs * marginal
+
+        if net_rental.negative?
+          { kind: "refund", amount: amount.to_f }
+        elsif net_rental.positive?
+          { kind: "payable", amount: amount.to_f }
+        else
+          { kind: "none", amount: 0.0 }
+        end
       end
 
       def deductions_json
