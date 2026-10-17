@@ -1,8 +1,8 @@
 <%# locals: (filename:, inline_src:, download_src:, image:) %>
 <div class="flex flex-col h-full bg-container shadow-border-xs rounded-xl overflow-hidden border border-primary"
-     data-document-viewer-target="panel"
+     data-document-viewer-panel
      role="dialog"
-     aria-modal="true"
+     aria-modal="false"
      aria-label="<%= t("tax.documents.viewer.title") %>">
   <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-subdued shrink-0">
     <p class="text-sm font-medium text-primary truncate min-w-0"><%= filename %></p>
@@ -14,11 +14,11 @@
             data: { turbo: false } do %>
         <%= icon("download", size: "sm") %>
       <% end %>
-      <%= button_tag type: "button",
+      <%= link_to preview_clear_tax_documents_path,
             class: "inline-flex items-center justify-center p-2 rounded-md text-primary hover:bg-surface-hover",
             title: t("tax.documents.viewer.close"),
             aria: { label: t("tax.documents.viewer.close") },
-            data: { action: "document-viewer#close" } do %>
+            data: { turbo_frame: "document_viewer" } do %>
         <%= icon("x", size: "sm") %>
       <% end %>
     </div>

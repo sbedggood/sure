@@ -26,7 +26,7 @@ class Tax::DocumentsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_select "turbo-frame#document_viewer"
-    assert_select "[data-document-viewer-target='panel'][role='dialog']"
+    assert_select "[data-document-viewer-panel][role='dialog']"
     assert_select "iframe[src=?]", @document.inline_blob_path
     assert_select "a[href=?]", download_tax_document_path(@document)
   end

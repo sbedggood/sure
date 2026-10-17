@@ -1,16 +1,13 @@
 import { Controller } from "@hotwired/stimulus";
 import { Turbo } from "@hotwired/turbo-rails";
+import { computePanelStyles, LG_BREAKPOINT_PX } from "utils/document_viewer_layout";
 
-const MARGIN_PX = 12;
-const LG_BREAKPOINT_PX = 1024;
-const NO_DRAWER_MAX_WIDTH_PX = 960;
-const DRAWER_FALLBACK_RIGHT = "calc(min(525px, 40vw) + 24px)";
+const PANEL_SELECTOR = "[data-document-viewer-panel]";
+const SLOT_SELECTOR = "[data-document-viewer-slot]";
 
-// Positions the tax document preview card in the viewport: beside an open
-// drawer on large screens, or as a large left/centre panel when alone.
+// Tax document preview: mounts inside the open drawer <dialog> so controls stay
+// interactive above the modal backdrop; clears when the drawer closes.
 export default class extends Controller {
-  static targets = ["panel"];
-
   static values = {
     clearUrl: String,
   };
@@ -19,10 +16,15 @@ export default class extends Controller {
     this.boundLayout = this.layout.bind(this);
     this.boundOnFrameLoad = this.onFrameLoad.bind(this);
     this.boundOnTransitionEnd = this.onTransitionEnd.bind(this);
+    this.boundOnEscape = this.onEscape.bind(this);
+    this.boundOnDrawerClose = this.onDrawerClose.bind(this);
+    this.boundBeforeFrameRender = this.onBeforeFrameRender.bind(this);
 
     window.addEventListener("resize", this.boundLayout);
     document.addEventListener("turbo:frame-load", this.boundOnFrameLoad);
     document.addEventListener("turbo:frame-render", this.boundOnFrameLoad);
+    document.addEventListener("keydown", this.boundOnEscape, true);
+    document.addEventListener("turbo:before-frame-render", this.boundBeforeFrameRender);
 
     this.observeDrawer();
     this.scheduleLayout();
@@ -32,29 +34,64 @@ export default class extends Controller {
     window.removeEventListener("resize", this.boundLayout);
     document.removeEventListener("turbo:frame-load", this.boundOnFrameLoad);
     document.removeEventListener("turbo:frame-render", this.boundOnFrameLoad);
+    document.removeEventListener("keydown", this.boundOnEscape, true);
+    document.removeEventListener("turbo:before-frame-render", this.boundBeforeFrameRender);
     this.resizeObserver?.disconnect();
     this.drawerObserver?.disconnect();
     this.detachTransitionListeners();
+    this.unbindDrawerDialogClose();
   }
 
-  close() {
-    if (!this.hasPanelTarget || !this.clearUrlValue) return;
+  close(event) {
+    event?.preventDefault();
+    this.clearViewer();
+  }
+
+  onEscape(event) {
+    if (event.key !== "Escape") return;
+    if (!this.panelElement()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    this.clearViewer();
+  }
+
+  clearViewer() {
+    if (!this.clearUrlValue) return;
 
     Turbo.visit(this.clearUrlValue, { frame: "document_viewer" });
+    this.syncHostPointerEvents();
   }
 
   onFrameLoad(event) {
     const frame = event.target;
 
     if (frame.id === "drawer") {
+      this.bindDrawerDialogClose();
       this.maybeAutoOpenDrawerAttachment(frame);
       this.scheduleLayout();
       return;
     }
 
-    if (frame.id !== "document_viewer" && !frame.querySelector?.("#document_viewer")) return;
+    if (frame.id !== "document_viewer") return;
 
     this.scheduleLayout();
+  }
+
+  onBeforeFrameRender(event) {
+    const frame = event.target;
+    if (frame.id !== "drawer") return;
+
+    const newFrame = event.detail?.newFrame;
+    const hasDialog = Boolean(newFrame?.querySelector?.("dialog"));
+    const emptyFrame = !newFrame?.innerHTML?.trim();
+
+    if (emptyFrame || !hasDialog) this.clearViewer();
+  }
+
+  onDrawerClose() {
+    this.clearViewer();
   }
 
   maybeAutoOpenDrawerAttachment(drawerFrame) {
@@ -81,10 +118,30 @@ export default class extends Controller {
     const sidebar = document.querySelector("[data-app-layout-target='leftSidebar']");
     if (sidebar) this.resizeObserver.observe(sidebar);
 
-    this.drawerObserver = new MutationObserver(() => this.scheduleLayout());
+    this.drawerObserver = new MutationObserver(() => {
+      this.bindDrawerDialogClose();
+      this.scheduleLayout();
+    });
     this.drawerObserver.observe(drawer, { childList: true, subtree: true, attributes: true });
 
     this.attachTransitionListeners(drawer);
+    this.bindDrawerDialogClose();
+  }
+
+  bindDrawerDialogClose() {
+    const dialog = this.openDrawerDialog();
+    if (!dialog || dialog === this.boundDialog) return;
+
+    this.unbindDrawerDialogClose();
+    this.boundDialog = dialog;
+    dialog.addEventListener("close", this.boundOnDrawerClose);
+  }
+
+  unbindDrawerDialogClose() {
+    if (!this.boundDialog) return;
+
+    this.boundDialog.removeEventListener("close", this.boundOnDrawerClose);
+    this.boundDialog = null;
   }
 
   attachTransitionListeners(drawer) {
@@ -118,73 +175,71 @@ export default class extends Controller {
   }
 
   layout() {
-    const host = this.element;
-    if (!this.hasPanelTarget) {
-      host.classList.add("pointer-events-none");
-      this.hidePopoverLayer();
+    const panel = this.panelElement();
+    if (!panel) {
+      this.syncHostPointerEvents();
       return;
     }
 
-    host.classList.remove("pointer-events-none");
-    this.showPopoverLayer();
+    this.mountPanel(panel);
+    this.syncHostPointerEvents();
 
-    const panel = this.panelTarget;
     const viewportWidth = window.innerWidth;
     const isLarge = viewportWidth >= LG_BREAKPOINT_PX;
     const drawerPanel = this.drawerPanelElement();
-    const top = `calc(${MARGIN_PX}px + env(safe-area-inset-top, 0px))`;
-    const bottom = `calc(${MARGIN_PX}px + env(safe-area-inset-bottom, 0px))`;
-    const leftInset = this.contentAreaLeft();
+    const drawerDialog = this.openDrawerDialog();
+    const drawerLeft = drawerPanel?.getBoundingClientRect().left ?? 0;
+    const styles = computePanelStyles({
+      viewportWidth,
+      drawerLeft,
+      leftInset: this.contentAreaLeft(),
+      isLarge,
+      hasDrawer: Boolean(drawerDialog),
+    });
 
-    panel.style.position = "fixed";
-    panel.style.top = top;
-    panel.style.bottom = bottom;
-    panel.style.height = "";
-    panel.style.maxWidth = "";
-    panel.style.marginLeft = "";
-    panel.style.marginRight = "";
+    Object.assign(panel.style, styles);
+    panel.style.pointerEvents = "auto";
+    panel.style.zIndex = drawerDialog ? "1" : "45";
+  }
 
-    if (drawerPanel && isLarge) {
-      this.attachTransitionListeners(document.querySelector("turbo-frame#drawer"));
+  mountPanel(panel) {
+    const dialog = this.openDrawerDialog();
+    const frame = document.getElementById("document_viewer");
 
-      const drawerLeft = drawerPanel.getBoundingClientRect().left;
-      const gap = MARGIN_PX * 2;
-      const usableWidth = drawerLeft - leftInset - gap;
-
-      panel.style.left = `${leftInset}px`;
-
-      if (usableWidth > 80) {
-        panel.style.right = `${viewportWidth - drawerLeft + MARGIN_PX}px`;
-        panel.style.width = "auto";
-      } else {
-        panel.style.right = DRAWER_FALLBACK_RIGHT;
-        panel.style.width = "auto";
-      }
-    } else if (drawerPanel && !isLarge) {
-      panel.style.left = `${leftInset}px`;
-      panel.style.right = `${MARGIN_PX}px`;
-      panel.style.width = "auto";
-      panel.style.bottom = "auto";
-      panel.style.height = `min(45vh, calc(100vh - ${MARGIN_PX * 2}px))`;
-    } else {
-      const width = Math.min(NO_DRAWER_MAX_WIDTH_PX, viewportWidth - leftInset - MARGIN_PX);
-      const left = Math.max(leftInset, Math.floor((viewportWidth - width) / 2));
-
-      panel.style.left = `${left}px`;
-      panel.style.width = `${width}px`;
-      panel.style.right = "auto";
+    if (dialog) {
+      const slot = this.ensureDialogSlot(dialog);
+      if (panel.parentElement !== slot) slot.appendChild(panel);
+      return;
     }
+
+    if (frame && panel.parentElement !== frame) frame.appendChild(panel);
+  }
+
+  ensureDialogSlot(dialog) {
+    let slot = dialog.querySelector(SLOT_SELECTOR);
+    if (slot) return slot;
+
+    slot = document.createElement("div");
+    slot.dataset.documentViewerSlot = "";
+    slot.className = "fixed inset-0 pointer-events-none";
+    slot.style.zIndex = "0";
+    dialog.insertBefore(slot, dialog.firstChild);
+    return slot;
+  }
+
+  panelElement() {
+    return document.querySelector(PANEL_SELECTOR);
   }
 
   drawerPanelElement() {
     const dialog = this.openDrawerDialog();
     if (!dialog) return null;
 
-    const content =
+    return (
       dialog.querySelector("[data-DS--dialog-target='content']") ||
-      dialog.querySelector("[data-ds--dialog-target='content']");
-
-    return content || dialog;
+      dialog.querySelector("[data-ds--dialog-target='content']") ||
+      dialog
+    );
   }
 
   openDrawerDialog() {
@@ -197,12 +252,12 @@ export default class extends Controller {
 
   contentAreaLeft() {
     const sidebar = document.querySelector("[data-app-layout-target='leftSidebar']");
-    if (!sidebar) return MARGIN_PX;
+    if (!sidebar) return 12;
 
     const rect = sidebar.getBoundingClientRect();
-    if (rect.width < 8 || sidebar.classList.contains("w-0")) return MARGIN_PX;
+    if (rect.width < 8 || sidebar.classList.contains("w-0")) return 12;
 
-    return Math.round(rect.right + MARGIN_PX);
+    return Math.round(rect.right + 12);
   }
 
   isDrawerTransition(target) {
@@ -210,13 +265,11 @@ export default class extends Controller {
     return Boolean(drawer && drawer.contains(target));
   }
 
-  showPopoverLayer() {
-    if (typeof this.element.showPopover !== "function") return;
-    if (!this.element.matches(":popover-open")) this.element.showPopover();
-  }
-
-  hidePopoverLayer() {
-    if (typeof this.element.hidePopover !== "function") return;
-    if (this.element.matches(":popover-open")) this.element.hidePopover();
+  syncHostPointerEvents() {
+    if (this.panelElement()) {
+      this.element.classList.remove("pointer-events-none");
+    } else {
+      this.element.classList.add("pointer-events-none");
+    }
   }
 }

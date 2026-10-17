@@ -33,11 +33,9 @@
       <%= turbo_frame_tag "drawer" %>
     <% end %>
     <div id="document_viewer_host"
-         popover="manual"
-         class="fixed inset-0 m-0 max-w-none max-h-none border-0 bg-transparent overflow-visible p-0 pointer-events-none"
-         data-controller="document-viewer hotkey"
-         data-document-viewer-clear-url-value="<%= preview_clear_tax_documents_path %>"
-         data-hotkey="esc:document-viewer#close">
+         class="pointer-events-none"
+         data-controller="document-viewer"
+         data-document-viewer-clear-url-value="<%= preview_clear_tax_documents_path %>">
       <%= turbo_frame_tag "document_viewer", class: "contents" %>
     </div>
 
