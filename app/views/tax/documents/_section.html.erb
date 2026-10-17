@@ -51,13 +51,13 @@
       <% end %>
 
       <% if show_fy_filter %>
-        <%= form_with url: tax_documents_path, method: :get, data: { turbo_frame: "_top" }, class: "flex items-center gap-2 min-w-[14rem]" do %>
+        <%= form_with url: tax_documents_path, method: :get, data: { turbo_frame: "_top" }, class: "flex flex-col gap-1 min-w-56" do %>
           <%= hidden_field_tag :doc_type, doc_type %>
-          <label class="text-sm text-secondary shrink-0" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
+          <label class="text-sm text-secondary font-medium" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
           <%= select_tag :doc_fy,
             options_for_select([[t("tax.documents_all.all_fys"), ""]] + fy_options, fy_filter),
             id: "doc_fy",
-            class: "min-w-52 rounded-md border border-primary bg-container pl-3 pr-10 py-1.5 text-sm",
+            class: "min-w-56 w-full rounded-lg border border-secondary bg-container pl-3 pr-10 py-2 text-sm text-primary",
             onchange: "this.form.submit()" %>
         <% end %>
       <% end %>

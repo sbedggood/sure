@@ -145,13 +145,11 @@
                     <% end %>
                   </div>
 
-                  <div class="md:hidden flex shrink-0 min-w-0 max-w-1/2 has-[[data-tag-empty]]:hidden">
-                    <% if view_ctx == "tax_deductions" %>
-                      <%= render "tags/summary", transaction: transaction, variant: :mobile, editable: false %>
-                    <% else %>
+                  <% unless view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
+                    <div class="md:hidden flex shrink-0 min-w-0 max-w-1/2 has-[[data-tag-empty]]:hidden">
                       <%= render "tags/menu", entry: entry, transaction: transaction, variant: :mobile %>
-                    <% end %>
-                  </div>
+                    </div>
+                  <% end %>
                 </div>
 
                 <div class="text-secondary text-xs font-normal">
@@ -201,7 +199,7 @@
         <% if entry.account.supports_trades? && !transaction.transfer? %>
           <%# For investment/crypto accounts, show activity label instead of category %>
           <%= render "investment_activity/quick_edit_badge", entry: entry, entryable: transaction %>
-        <% elsif view_ctx == "tax_deductions" %>
+        <% elsif view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
           <% category = read_only_category(transaction) %>
           <%= render "categories/badge", category: category if category %>
         <% else %>
@@ -209,15 +207,14 @@
         <% end %>
       </div>
 
-      <div class="hidden md:flex md:w-1/5 md:shrink-0 lg:w-auto min-w-0 items-center col-span-2 pr-2" data-tag-fit-bounds="1">
-        <% if view_ctx == "tax_deductions" %>
-          <%= render "tags/summary", transaction: transaction, variant: :desktop, editable: false %>
-        <% else %>
+      <% unless view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
+        <div class="hidden md:flex md:w-1/5 md:shrink-0 lg:w-auto min-w-0 items-center col-span-2 pr-2" data-tag-fit-bounds="1">
           <%= render "tags/menu", entry: entry, transaction: transaction, variant: :desktop %>
-        <% end %>
-      </div>
+        </div>
+      <% end %>
 
-      <div class="shrink-0 col-span-4 lg:col-span-2 ml-auto flex items-center justify-end gap-2 <%= "opacity-50" if entry.excluded %>">
+      <% amount_col_span = view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) ? "col-span-4 lg:col-span-4" : "col-span-4 lg:col-span-2" %>
+      <div class="shrink-0 <%= amount_col_span %> ml-auto flex items-center justify-end gap-2 <%= "opacity-50" if entry.excluded %> <%= "hidden lg:hidden" if view_ctx == "tax_deductions_for_review" %>">
         <%# Protection indicator - shows on hover when entry is protected from sync %>
         <% if entry.protected_from_sync? && !entry.excluded? %>
           <%= link_to entry_path(entry),

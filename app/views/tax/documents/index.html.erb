@@ -1,15 +1,35 @@
 <% content_for :title, t("tax.documents_all.page_title") %>
 
+<% content_for :breadcrumbs do %>
+  <%= render "layouts/shared/breadcrumbs", breadcrumbs: [
+        [ t("breadcrumbs.home"), root_path ],
+        [ t("breadcrumbs.tax"), tax_dashboard_path ],
+        [ t("breadcrumbs.documents"), nil ]
+      ] %>
+<% end %>
+
 <% content_for :page_header do %>
   <div class="space-y-4 mb-6">
-    <header class="flex justify-between items-center text-primary font-medium gap-4">
-      <div class="space-y-1 min-w-0">
-        <h1 class="text-xl lg:text-3xl font-medium text-primary">
-          <%= t("tax.documents_all.page_title") %>
-        </h1>
-        <p class="text-sm lg:text-base text-secondary">
-          <%= t("tax.documents_all.subtitle") %>
-        </p>
+    <header class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start text-primary font-medium">
+      <div class="space-y-3 min-w-0">
+        <div class="space-y-1">
+          <h1 class="text-xl lg:text-3xl font-medium text-primary">
+            <%= t("tax.documents_all.page_title") %>
+          </h1>
+          <p class="text-sm lg:text-base text-secondary">
+            <%= t("tax.documents_all.subtitle") %>
+          </p>
+        </div>
+
+        <%= form_with url: tax_documents_path, method: :get, data: { turbo_frame: "_top" }, class: "flex flex-col gap-1 min-w-56 max-w-xs" do %>
+          <%= hidden_field_tag :doc_type, @doc_type %>
+          <label class="text-sm text-secondary font-medium" for="doc_fy_header"><%= t("tax.documents_all.filter_fy") %></label>
+          <%= select_tag :doc_fy,
+            options_for_select([[t("tax.documents_all.all_fys"), ""]] + @fy_options, @fy_filter),
+            id: "doc_fy_header",
+            class: "min-w-56 w-full rounded-lg border border-secondary bg-container pl-3 pr-10 py-2 text-sm text-primary",
+            onchange: "this.form.submit()" %>
+        <% end %>
       </div>
 
       <%= render DS::Link.new(
@@ -20,7 +40,8 @@
               start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
               return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type)
             ),
-            frame: :modal
+            frame: :modal,
+            class: "shrink-0 self-start sm:self-center"
           ) %>
     </header>
   </div>
@@ -34,7 +55,7 @@
         upload_start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
         return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type),
         show_scope_filter: false,
-        show_fy_filter: true,
+        show_fy_filter: false,
         fy_filter: @fy_filter,
         fy_options: @fy_options %>
 </div>

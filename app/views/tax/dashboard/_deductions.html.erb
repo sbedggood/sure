@@ -1,7 +1,7 @@
 <%# locals: (financial_year:, settings:, deductions:) %>
 <% data = Tax::Summary.new(family: Current.family, start_year: financial_year.start_year).as_json[:deductions] %>
 
-<div class="rounded-xl bg-container-inset p-4 mb-4 space-y-3">
+<div class="bg-container rounded-xl shadow-border-xs p-4 mb-4 space-y-4">
   <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
     <%= hidden_field_tag :start_year, financial_year.start_year %>
     <%= hidden_field_tag :return_section, "deductions" %>
@@ -9,6 +9,7 @@
     <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01, class: "max-w-[8rem]" %>
     <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
   <% end %>
+
   <p class="text-sm text-secondary">
     <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>
     <%= number_to_currency(data[:home_office][:claim]) %>
@@ -16,10 +17,8 @@
     <span class="text-primary font-medium"><%= t("tax.deductions.car") %>:</span>
     <%= number_to_currency(data[:car][:claim]) %>
   </p>
-</div>
 
-<div class="rounded-xl bg-container-inset space-y-1 p-1 mb-4">
-  <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+  <div class="border-t border-subdued pt-4 flex flex-wrap items-center justify-between gap-3">
     <div class="text-sm text-secondary">
       <span class="text-primary font-medium"><%= t("tax.deductions.claim") %>:</span>
       <%= number_to_currency(deductions.claimable_grand_total) %>

@@ -1,5 +1,12 @@
 <% content_for :title, t("tax.title") %>
 
+<% content_for :breadcrumbs do %>
+  <%= render "layouts/shared/breadcrumbs", breadcrumbs: [
+        [ t("breadcrumbs.home"), root_path ],
+        [ t("breadcrumbs.tax"), nil ]
+      ] %>
+<% end %>
+
 <% content_for :page_header do %>
   <div class="space-y-4 mb-6">
     <header class="flex justify-between items-center text-primary font-medium gap-4">
@@ -12,17 +19,17 @@
         </p>
       </div>
 
-      <div class="flex flex-wrap items-center justify-end gap-2 shrink-0">
-        <%= form_with url: tax_dashboard_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex items-center" do |f| %>
+      <div class="flex flex-wrap items-end justify-end gap-2 shrink-0">
+        <%= form_with url: tax_dashboard_path, method: :get, data: { controller: "auto-submit-form" }, class: "flex flex-col gap-1 min-w-[13rem]" do |f| %>
           <%= hidden_field_tag :section, @section %>
           <%= hidden_field_tag :doc_scope, @doc_scope %>
           <%= hidden_field_tag :doc_type, @doc_type %>
-          <label class="sr-only" for="tax_start_year"><%= t("tax.fy_label") %></label>
+          <label class="text-xs text-secondary font-medium" for="tax_start_year"><%= t("tax.fy_label") %></label>
           <%= f.select :start_year,
                 options_for_select(@fy_options, @financial_year.start_year),
                 {},
                 id: "tax_start_year",
-                class: "min-w-52 rounded-lg border border-secondary bg-container px-3 py-2 text-sm text-primary max-w-full",
+                class: "min-w-52 w-full rounded-lg border border-secondary bg-container pl-3 pr-10 py-2 text-sm text-primary max-w-full",
                 data: { auto_submit_form_target: "auto" } %>
         <% end %>
         <%= render DS::Link.new(
@@ -37,8 +44,8 @@
 
     <%= render "tax/dashboard/fy_summary", summary: @summary, deductions: @deductions %>
 
-    <div class="flex items-center justify-between gap-4">
-      <%= render DS::SegmentedControl.new(aria_label: t("tax.sections.aria_label"), class: "bg-surface-inset overflow-x-auto no-scrollbar self-start") do |control| %>
+    <div class="w-fit max-w-full">
+      <%= render DS::SegmentedControl.new(aria_label: t("tax.sections.aria_label"), class: "bg-surface-inset overflow-x-auto no-scrollbar") do |control| %>
         <% %w[calendar property deductions documents].each do |section| %>
           <% control.with_segment(
                t("tax.sections.#{section}"),
