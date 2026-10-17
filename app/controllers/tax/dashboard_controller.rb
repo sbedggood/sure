@@ -16,6 +16,7 @@ module Tax
       @property_grid = Tax::PropertyGrid.new(family: Current.family, start_year: @financial_year.start_year)
       @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
       @doc_scope = params[:doc_scope].presence || "fy"
+      @doc_type = params[:doc_type].presence || "all"
       @documents = @doc_scope == "all" ? @document_catalog.all_rows : @document_catalog.rows_for_fy(@financial_year.start_year)
       @section = "calendar" unless valid_section?(@section)
     end

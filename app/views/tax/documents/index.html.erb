@@ -3,22 +3,16 @@
 <div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
   <header class="flex justify-between items-center gap-4 text-primary font-medium">
     <h1 class="text-xl"><%= t("tax.documents_all.page_title") %></h1>
-    <%= render DS::Link.new(
-          text: t("tax.documents.upload"),
-          icon: "plus",
-          variant: "primary",
-          href: tax_dashboard_path(section: "documents"),
-          frame: "_top"
-        ) %>
   </header>
 
-  <%= form_with url: tax_documents_path, method: :get, class: "flex flex-wrap items-center gap-3" do %>
-    <label class="text-sm text-secondary" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
-    <%= select_tag :doc_fy,
-      options_for_select([[t("tax.documents_all.all_fys"), ""]] + @fy_options, @fy_filter),
-      class: "rounded-md border border-primary bg-container px-2 py-1 text-sm",
-      onchange: "this.form.submit()" %>
-  <% end %>
-
-  <%= render "tax/documents/table", rows: @rows, show_transaction_columns: true %>
+  <%= render "tax/documents/section",
+        rows: @rows,
+        doc_scope: "all",
+        doc_type: @doc_type,
+        upload_start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
+        return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type),
+        show_scope_filter: false,
+        show_fy_filter: true,
+        fy_filter: @fy_filter,
+        fy_options: @fy_options %>
 </div>

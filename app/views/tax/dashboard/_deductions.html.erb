@@ -1,26 +1,22 @@
 <%# locals: (financial_year:, settings:, deductions:) %>
 <% data = Tax::Summary.new(family: Current.family, start_year: financial_year.start_year).as_json[:deductions] %>
 
-<%= form_with url: tax_settings_path, method: :patch, class: "mb-4 flex flex-wrap gap-4 items-end rounded-xl bg-container-inset p-4" do %>
-  <%= hidden_field_tag :start_year, financial_year.start_year %>
-  <%= hidden_field_tag :return_section, "deductions" %>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.deductions.wfh_rate") %></label>
-    <%= number_field_tag "tax_fy_setting[wfh_hourly_rate]", settings.wfh_hourly_rate, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
-  </div>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.deductions.car_rate") %></label>
-    <%= number_field_tag "tax_fy_setting[car_rate_per_km]", settings.car_rate_per_km, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
-  </div>
-  <div class="text-sm text-secondary">
+<div class="rounded-xl bg-container-inset p-4 mb-4 space-y-3">
+  <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <%= hidden_field_tag :return_section, "deductions" %>
+    <%= form.number_field "tax_fy_setting[wfh_hourly_rate]", label: t("tax.deductions.wfh_rate"), value: settings.wfh_hourly_rate, step: 0.01, class: "max-w-[8rem]" %>
+    <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01, class: "max-w-[8rem]" %>
+    <%= render DS::Button.new(text: t("tax.property.save_settings"), type: "submit") %>
+  <% end %>
+  <p class="text-sm text-secondary">
     <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>
     <%= number_to_currency(data[:home_office][:claim]) %>
     <span class="mx-2">·</span>
     <span class="text-primary font-medium"><%= t("tax.deductions.car") %>:</span>
     <%= number_to_currency(data[:car][:claim]) %>
-  </div>
-  <%= submit_tag t("tax.property.save_settings"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
-<% end %>
+  </p>
+</div>
 
 <div class="rounded-xl bg-container-inset space-y-1 p-1 mb-4">
   <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">

@@ -46,6 +46,6 @@
   <% when "deductions" %>
     <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, deductions: @deductions %>
   <% when "documents" %>
-    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents, doc_scope: @doc_scope %>
+    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents, doc_scope: @doc_scope, doc_type: @doc_type %>
   <% end %>
 </div>

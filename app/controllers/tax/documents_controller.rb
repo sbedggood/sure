@@ -9,6 +9,7 @@ module Tax
     def index
       @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
       @fy_filter = params[:doc_fy].presence
+      @doc_type = params[:doc_type].presence || "all"
       @rows = if @fy_filter.present?
         @document_catalog.rows_for_fy(@fy_filter)
       else
@@ -17,17 +18,22 @@ module Tax
       @fy_options = financial_year_options
     end
 
+    def new
+      @start_year = params[:start_year].presence&.to_i || Tax::FinancialYear.current_start_year
+      @return_to = params[:return_to].presence || tax_dashboard_path(start_year: @start_year, section: "documents")
+    end
+
     def create
       start_year = params.require(:start_year).to_i
       document = Current.family.tax_documents.new(document_params.merge(start_year: start_year))
       document.file.attach(params.require(:file))
 
+      return_to = safe_return_path(params[:return_to])
+
       if document.save
-        redirect_to tax_dashboard_path(start_year: start_year, section: "documents"),
-          notice: t("tax.documents.created")
+        redirect_to return_to, notice: t("tax.documents.created")
       else
-        redirect_to tax_dashboard_path(start_year: start_year, section: "documents"),
-          alert: document.errors.full_messages.to_sentence
+        redirect_to return_to, alert: document.errors.full_messages.to_sentence
       end
     end
 
@@ -59,6 +65,17 @@ module Tax
           fy = Tax::FinancialYear.new(year)
           [ fy.label, year ]
         end.reverse
+      end
+
+      def safe_return_path(path)
+        return tax_dashboard_path(section: "documents") if path.blank?
+
+        uri = URI.parse(path)
+        return tax_dashboard_path(section: "documents") unless uri.host.nil? && path.start_with?("/")
+
+        path
+      rescue URI::InvalidURIError
+        tax_dashboard_path(section: "documents")
       end
   end
 end

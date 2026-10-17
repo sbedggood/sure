@@ -1,19 +1,14 @@
 <%# locals: (financial_year:, settings:, summary:, property_grid:) %>
 <% property = summary.as_json[:property] %>
 
-<%= form_with url: tax_settings_path, method: :patch, class: "mb-4 flex flex-wrap gap-4 items-end rounded-xl bg-container-inset p-4" do %>
-  <%= hidden_field_tag :start_year, financial_year.start_year %>
-  <%= hidden_field_tag :return_section, "property" %>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.property.allocation") %></label>
-    <%= number_field_tag "tax_fy_setting[property_allocation_percent]", settings.property_allocation_percent, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
-  </div>
-  <div>
-    <label class="text-xs font-medium text-secondary uppercase"><%= t("tax.property.marginal_rate") %></label>
-    <%= number_field_tag "tax_fy_setting[marginal_tax_rate_percent]", settings.marginal_tax_rate_percent, step: 0.01, class: "mt-1 rounded-md border border-primary bg-container px-2 py-1 text-primary" %>
-  </div>
-  <%= submit_tag t("tax.property.save_settings"), class: "rounded-md bg-accent px-3 py-2 text-sm text-on-accent" %>
-<% end %>
+<%= render "tax/dashboard/settings_fields",
+      financial_year: financial_year,
+      settings: settings,
+      return_section: "property",
+      fields: [
+        { name: "tax_fy_setting[property_allocation_percent]", label: t("tax.property.allocation"), value: settings.property_allocation_percent },
+        { name: "tax_fy_setting[marginal_tax_rate_percent]", label: t("tax.property.marginal_rate"), value: settings.marginal_tax_rate_percent }
+      ] %>
 
 <div class="rounded-xl bg-container-inset space-y-1 p-1">
   <div class="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-secondary uppercase">

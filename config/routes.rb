@@ -466,7 +466,7 @@ Rails.application.routes.draw do
     get "documents/:tax_document_id/link", to: "document_links#show", as: :document_link
     post "documents/:tax_document_id/link", to: "document_links#create", as: :document_link_create
     delete "documents/:tax_document_id/link", to: "document_links#destroy", as: :document_link_destroy
-    resources :documents, only: %i[index create show destroy]
+    resources :documents, only: %i[index new create show destroy]
     delete "document_attachments", to: "document_attachments#destroy", as: :document_attachment
     get "export", to: "exports#show", as: :export
   end

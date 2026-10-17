@@ -1,0 +1,15 @@
+<%# locals: (financial_year:, settings:, return_section:, fields:) %>
+<div class="rounded-xl bg-container-inset p-4 mb-4">
+  <%= styled_form_with url: tax_settings_path, method: :patch, class: "flex flex-wrap gap-4 items-end" do |form| %>
+    <%= hidden_field_tag :start_year, financial_year.start_year %>
+    <%= hidden_field_tag :return_section, return_section %>
+    <% fields.each do |field| %>
+      <%= form.number_field field[:name],
+            label: field[:label],
+            value: field[:value],
+            step: field[:step] || 0.01,
+            class: "max-w-[8rem]" %>
+    <% end %>
+    <%= render DS::Button.new(text: t("tax.property.save_settings"), type: "submit") %>
+  <% end %>
+</div>
