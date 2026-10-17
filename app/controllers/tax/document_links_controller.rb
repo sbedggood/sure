@@ -6,8 +6,20 @@ module Tax
 
     def show
       @document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
-      @query = params[:q]
-      @candidates = search_candidates
+      @candidate_query = params[:q]
+      @fy_filter = if params.key?(:fy)
+        params[:fy].presence || "all"
+      else
+        default_fy_filter_for(@document)
+      end
+      @account_id = params[:account_id].presence
+      @fy_options = financial_year_options
+      @account_options = Current.family.accounts.visible.alphabetically
+      @search_results = document_link_search.results(
+        query: @candidate_query,
+        fy_filter: @fy_filter,
+        account_id: @account_id
+      )
       render layout: false
     end
 
@@ -41,6 +53,30 @@ module Tax
 
     private
 
+      def default_fy_filter_for(document)
+        if document.document_date
+          Tax::FinancialYear.current_start_year(on: document.document_date).to_s
+        else
+          document.start_year.to_s
+        end
+      end
+
+      def document_link_search
+        DocumentLinkSearch.new(
+          family: Current.family,
+          document: @document,
+          entries_scope: Current.accessible_entries
+        )
+      end
+
+      def financial_year_options
+        current = Tax::FinancialYear.current_start_year
+        (current - 5..current).map do |year|
+          fy = Tax::FinancialYear.new(year)
+          [ "#{fy.label} (#{fy.start_on.year}–#{fy.end_on.year})", year ]
+        end.reverse
+      end
+
       def attachment_refresh_stream(entry)
         turbo_stream.replace(
           "transaction_attachments_#{entry.transaction.id}",
@@ -56,20 +92,6 @@ module Tax
           can_upload: permission.in?([ :owner, :full_control, :read_write ]),
           can_delete: permission.in?([ :owner, :full_control ])
         }
-      end
-
-      def search_candidates
-        scope = Current.family.entries
-          .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
-          .includes(:account, entryable: :merchant)
-          .order(date: :desc)
-          .limit(50)
-
-        if @query.present?
-          scope = scope.where("entries.name ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(@query)}%")
-        end
-
-        scope
       end
   end
 end

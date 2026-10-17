@@ -2,6 +2,8 @@
 
 module Tax
   class PropertyCellSearch
+    include EntryCandidateFilters
+
     FEE_NAME_PATTERN = /fee|surcharge|international transaction/i
 
     attr_reader :family, :tag_name, :month, :financial_year, :linked_entry_ids
@@ -93,42 +95,8 @@ module Tax
         entry.transaction.tags.any? { |t| t.name == tag_name || TagCatalog.declined?(t.name) }
       end
 
-      def apply_fy_filter(scope, fy_filter)
-        return scope if fy_filter.blank? || fy_filter == "all"
-
-        fy = FinancialYear.new(fy_filter.to_i)
-        scope.where(date: fy.range)
-      end
-
-      def apply_account_filter(scope, account_id)
-        return scope if account_id.blank?
-
-        scope.where(account_id: account_id)
-      end
-
       def apply_text_query(scope, query)
-        stripped = query.to_s.strip
-        return scope if stripped.blank?
-
-        amount = parse_amount(stripped)
-        if amount
-          scope.where("ABS(entries.amount) = :amount OR entries.amount = :neg", amount: amount, neg: -amount)
-        else
-          like = "%#{ActiveRecord::Base.sanitize_sql_like(stripped)}%"
-          scope.where(
-            "entries.name ILIKE :q OR COALESCE(entries.notes, '') ILIKE :q OR merchants.name ILIKE :q",
-            q: like
-          )
-        end
-      end
-
-      def parse_amount(query)
-        normalized = query.gsub(/[$,\s]/, "")
-        return nil unless normalized.match?(/\A-?\d+(?:\.\d+)?\z/)
-
-        BigDecimal(normalized.delete_prefix("-")).abs
-      rescue ArgumentError
-        nil
+        EntryCandidateTextQuery.apply_text_query(scope, query, amount_match: :exact)
       end
 
       def fee_like?(entry)

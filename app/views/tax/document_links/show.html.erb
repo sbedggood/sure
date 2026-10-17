@@ -26,27 +26,55 @@
         <p class="text-sm text-secondary"><%= t("tax.documents.link_prompt") %></p>
       <% end %>
 
-      <%= render DS::Disclosure.new(title: t("recurring_occurrences.show.search_all"), align: "left", open: true) do %>
-        <%= form_with url: tax_document_link_path(tax_document_id: @document.id), method: :get, data: { turbo_frame: "drawer" } do %>
-          <%= render DS::SearchInput.new(name: "q", value: @query, placeholder: t("tax.property.search_placeholder"), aria_label: t("tax.property.search_placeholder")) %>
+      <div class="space-y-3">
+        <p class="text-xs font-medium text-secondary uppercase"><%= t("recurring_occurrences.show.find_heading") %></p>
+
+        <%= styled_form_with url: tax_document_link_path(tax_document_id: @document.id),
+              method: :get,
+              data: { controller: "auto-submit-form", turbo_frame: "document_link_search" },
+              class: "space-y-3" do |form| %>
+          <%= render DS::SearchInput.new(
+                name: "q",
+                value: @candidate_query,
+                placeholder: t("tax.property.search_placeholder_extended"),
+                aria_label: t("tax.property.search_placeholder_extended"),
+                class: "w-full",
+                data: {
+                  "auto-submit-form-target": "auto",
+                  autosubmit_trigger_event: "input",
+                  autosubmit_debounce_timeout: 400
+                }
+              ) %>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <%= render DS::Select.new(
+                  form: form,
+                  method: :fy,
+                  items: [ { label: t("tax.property.fy_all"), value: "all" } ] +
+                    @fy_options.map { |label, year| { label: label, value: year.to_s } },
+                  selected: @fy_filter,
+                  label: t("tax.fy_label"),
+                  html_options: { data: { "auto-submit-form-target": "auto" } }
+                ) %>
+            <%= render DS::Select.new(
+                  form: form,
+                  method: :account_id,
+                  items: @account_options.map { |account| { label: account.name, value: account.id } },
+                  selected: @account_id.presence,
+                  include_blank: t("tax.property.all_accounts"),
+                  label: t("tax.property.account_filter"),
+                  html_options: { data: { "auto-submit-form-target": "auto" } }
+                ) %>
+          </div>
         <% end %>
 
-        <div class="divide-y divide-subdued mt-2">
-          <% @candidates.each do |entry| %>
-            <div class="flex items-center justify-between gap-3 py-2">
-              <div class="min-w-0">
-                <p class="text-sm text-primary truncate"><%= entry.name %></p>
-                <p class="text-xs text-secondary"><%= l(entry.date) %> · <%= entry.account.name %></p>
-              </div>
-              <%= button_to t("tax.property.link"),
-                    tax_document_link_create_path(tax_document_id: @document.id),
-                    params: { entry_id: entry.id },
-                    form: { data: { turbo_stream: true } },
-                    class: "text-sm text-accent shrink-0" %>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
+        <%= render "tax/document_links/search_results",
+              search_results: @search_results,
+              document: @document,
+              candidate_query: @candidate_query,
+              fy_filter: @fy_filter,
+              account_id: @account_id %>
+      </div>
     </div>
   <% end %>
 <% end %>

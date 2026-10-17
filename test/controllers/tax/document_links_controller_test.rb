@@ -11,7 +11,7 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
     @account = accounts(:depository)
     @entry = create_transaction(
       account: @account,
-      date: Date.new(2023, 5, 15),
+      date: Date.new(2023, 8, 15),
       amount: 100,
       currency: "AUD",
       name: "Salary"
@@ -19,7 +19,7 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
     @document = @family.tax_documents.new(
       document_type: "payslip",
       start_year: 2023,
-      document_date: Date.new(2023, 5, 15)
+      document_date: Date.new(2023, 8, 15)
     )
     @document.file.attach(
       io: StringIO.new("%PDF-1.4"),
@@ -27,6 +27,32 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
       content_type: "application/pdf"
     )
     @document.save!
+  end
+
+  test "show includes fy filter default and search results with amount" do
+    get tax_document_link_path(tax_document_id: @document.id)
+
+    assert_response :success
+    assert_match "document_link_search", response.body
+    assert_match "Salary", response.body
+    assert_match @entry.amount_money.abs.format, response.body
+    assert_match "FY", response.body
+  end
+
+  test "show filters by search query" do
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 16),
+      amount: 12,
+      currency: "AUD",
+      name: "Unrelated purchase"
+    )
+
+    get tax_document_link_path(tax_document_id: @document.id), params: { q: "Salary", fy: "2023" }
+
+    assert_response :success
+    assert_match "Salary", response.body
+    refute_match "Unrelated purchase", response.body
   end
 
   test "create links document as transaction attachment via turbo stream" do

@@ -1,0 +1,31 @@
+<%# locals: (search_results:, document:, candidate_query:, fy_filter:, account_id:) %>
+<%= turbo_frame_tag "document_link_search" do %>
+  <% if search_results.any? %>
+    <div class="divide-y divide-subdued bg-container-inset rounded-lg">
+      <% search_results.each do |entry| %>
+        <div class="flex items-center gap-3 px-3 py-2">
+          <div class="min-w-0 flex-1">
+            <p class="text-sm text-primary truncate"><%= entry.name %></p>
+            <p class="text-xs text-secondary truncate">
+              <%= l(entry.date, format: :short_with_year) %>
+              <% if entry.account %> &middot; <%= entry.account.name %><% end %>
+              <% if entry.notes.present? %> &middot; <%= entry.notes %><% end %>
+            </p>
+          </div>
+          <p class="text-sm font-medium privacy-sensitive shrink-0 <%= entry.amount.negative? ? "text-green-600" : "text-primary" %>">
+            <%= format_money(entry.amount_money.abs) %>
+          </p>
+          <%= button_to t("tax.property.link"),
+                tax_document_link_create_path(tax_document_id: document.id),
+                params: { entry_id: entry.id },
+                form: { data: { turbo_stream: true } },
+                class: "text-xs font-medium text-accent shrink-0" %>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-sm text-secondary px-1 py-2">
+      <%= candidate_query.present? || account_id.present? ? t("tax.property.no_search_results") : t("tax.property.search_prompt") %>
+    </p>
+  <% end %>
+<% end %>
