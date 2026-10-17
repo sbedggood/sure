@@ -43,21 +43,13 @@ module Tax
 
       def property_json
         months = financial_year.months
-        rows = TagCatalog::PROPERTY_EXPENSE_TAGS.map do |tag_name|
-          monthly = months.index_with { |m| BigDecimal("0") }
-          tagged_transactions[tag_name]&.each do |entry|
-            month = entry.date.beginning_of_month.to_date
-            monthly[month] += property_line_amount(entry) if monthly.key?(month)
-          end
-          total = monthly.values.sum
-          {
-            tag: tag_name,
-            label: tag_name.sub("Tax: Property - ", ""),
-            capital_improvement: tag_name == "Tax: Property - Improvements",
-            months: monthly.transform_keys { |d| d.iso8601 }.transform_values(&:to_f),
-            total: total.to_f
-          }
-        end
+        rows = property_schedule_rows(months, tagged_transactions, TagCatalog::PROPERTY_EXPENSE_TAGS)
+        informational_rows = property_schedule_rows(
+          months,
+          tagged_transactions,
+          TagCatalog::PROPERTY_INFORMATIONAL_TAGS,
+          informational: true
+        )
 
         rent_by_month = months.index_with { |m| BigDecimal("0") }
         rental_tag_names.each do |tag_name|
@@ -77,6 +69,7 @@ module Tax
         {
           months: months.map(&:iso8601),
           expense_rows: rows,
+          informational_rows: informational_rows,
           rental_income: {
             by_tag: rental_tag_names.map { |name|
               total = tagged_transactions[name]&.sum { |e| property_line_amount(e) } || BigDecimal("0")
@@ -189,6 +182,25 @@ module Tax
 
       def rental_tag_names
         family.tags.where("name LIKE ?", "#{TagCatalog::RENTAL_INCOME_PREFIX}%").pluck(:name).sort
+      end
+
+      def property_schedule_rows(months, tagged_transactions, tag_names, informational: false)
+        tag_names.map do |tag_name|
+          monthly = months.index_with { |m| BigDecimal("0") }
+          tagged_transactions[tag_name]&.each do |entry|
+            month = entry.date.beginning_of_month.to_date
+            monthly[month] += property_line_amount(entry) if monthly.key?(month)
+          end
+          total = monthly.values.sum
+          {
+            tag: tag_name,
+            label: informational ? I18n.t("tax.property.tenant_bill_share") : tag_name.sub("Tax: Property - ", ""),
+            informational: informational,
+            capital_improvement: tag_name == "Tax: Property - Improvements",
+            months: monthly.transform_keys { |d| d.iso8601 }.transform_values(&:to_f),
+            total: total.to_f
+          }
+        end
       end
 
       # Property costs and rental income may be negative (statement import) or positive (sync).

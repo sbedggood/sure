@@ -98,6 +98,26 @@ class Tax::SummaryTest < ActiveSupport::TestCase
     assert_equal 380.0, summary.dig(:property, :cost_total)
   end
 
+  test "tenant bill share is informational and excluded from cost total" do
+    tenant_tag = @family.tags.create!(name: Tax::TagCatalog::TENANT_BILL_SHARE_TAG, color: "#6471eb")
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 12),
+      amount: -80,
+      currency: "AUD",
+      name: "Tenant internet share",
+      tags: [ tenant_tag ]
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    property = summary[:property]
+    row = property[:informational_rows].find { |r| r[:tag] == tenant_tag.name }
+
+    assert_equal 80.0, row[:total]
+    assert_equal 200.0, property[:cost_total]
+  end
+
   test "property totals exclude electricity and non-schedule property tags" do
     electricity = @family.tags.create!(name: "Tax: Property - Electricity", color: "#6471eb")
 

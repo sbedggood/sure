@@ -462,6 +462,7 @@ Rails.application.routes.draw do
     post "review_decisions/accept", to: "review_decisions#accept", as: :review_accept
     get "property_cells", to: "property_cells#show", as: :property_cell
     post "property_cells/link", to: "property_cells#link", as: :property_cell_link
+    post "property_cells/link_bulk", to: "property_cells#link_bulk", as: :property_cell_link_bulk
     delete "property_cells/unlink", to: "property_cells#unlink", as: :property_cell_unlink
     get "documents/:tax_document_id/link", to: "document_links#show", as: :document_link
     post "documents/:tax_document_id/link", to: "document_links#create", as: :document_link_create

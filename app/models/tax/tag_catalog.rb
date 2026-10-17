@@ -15,6 +15,12 @@ module Tax
       "Tax: Property - Other"
     ].freeze
 
+    TENANT_BILL_SHARE_TAG = "Tax: Property - Tenant Bill Share"
+
+    PROPERTY_INFORMATIONAL_TAGS = [
+      TENANT_BILL_SHARE_TAG
+    ].freeze
+
     RENTAL_INCOME_PREFIX = "Tax: Rental Income"
     FOR_REVIEW_TAG = "Tax: For Review"
     DECLINED_TAG = "Tax: Declined"
@@ -26,6 +32,10 @@ module Tax
 
     def property_expense?(tag_name)
       PROPERTY_EXPENSE_TAGS.include?(tag_name)
+    end
+
+    def property_informational?(tag_name)
+      PROPERTY_INFORMATIONAL_TAGS.include?(tag_name)
     end
 
     def property_prefixed?(tag_name)

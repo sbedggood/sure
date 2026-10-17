@@ -7,6 +7,8 @@ class Tax::TagCatalogTest < ActiveSupport::TestCase
     assert Tax::TagCatalog.property_expense?("Tax: Property - Interest")
     refute Tax::TagCatalog.deduction_tag?("Tax: Property - Interest")
     refute Tax::TagCatalog.deduction_tag?("Tax: Property - Electricity")
+    assert Tax::TagCatalog.property_informational?(Tax::TagCatalog::TENANT_BILL_SHARE_TAG)
+    refute Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::TENANT_BILL_SHARE_TAG)
   end
 
   test "rental income and for review are not deduction tags" do

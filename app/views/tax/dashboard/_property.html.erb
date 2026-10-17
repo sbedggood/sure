@@ -1,6 +1,7 @@
 <%# locals: (financial_year:, settings:, summary:, property_grid:) %>
 <% property = summary.as_json[:property] %>
 <% expense_rows = property[:expense_rows] %>
+<% informational_rows = property[:informational_rows] || [] %>
 <% month_keys = property_grid.months.map(&:iso8601) %>
 <% monthly_expense_totals = month_keys.index_with do |key|
      expense_rows.sum { |row| BigDecimal((row[:months][key] || 0).to_s) }
@@ -53,6 +54,28 @@
               <% amount = row[:months][month.iso8601] || 0 %>
               <td class="px-3 py-3 text-sm text-right">
                 <%= link_to(number_to_currency(amount),
+                  tax_property_cell_path(
+                    tag_name: row[:tag],
+                    month: month.iso8601,
+                    start_year: financial_year.start_year
+                  ),
+                  data: { turbo_frame: "drawer" },
+                  class: "text-primary hover:underline privacy-sensitive") %>
+              </td>
+            <% end %>
+            <td class="px-3 py-3 text-sm text-right font-medium text-primary privacy-sensitive"><%= number_to_currency(row[:total]) %></td>
+          </tr>
+        <% end %>
+        <% informational_rows.each do |row| %>
+          <tr class="border-b border-subdued bg-surface-inset/50 hover:bg-surface-hover">
+            <td class="px-3 py-3 text-sm font-medium text-primary">
+              <span><%= row[:label] %></span>
+              <p class="text-xs font-normal text-secondary mt-0.5"><%= t("tax.property.tenant_bill_share_note") %></p>
+            </td>
+            <% property_grid.months.each do |month| %>
+              <% amount = row[:months][month.iso8601] || 0 %>
+              <td class="px-3 py-3 text-sm text-right">
+                <%= link_to(amount.positive? ? number_to_currency(amount) : "—",
                   tax_property_cell_path(
                     tag_name: row[:tag],
                     month: month.iso8601,

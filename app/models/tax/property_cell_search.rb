@@ -1,0 +1,97 @@
+# frozen_string_literal: true
+
+module Tax
+  class PropertyCellSearch
+    FEE_NAME_PATTERN = /fee|surcharge|international transaction/i
+
+    attr_reader :family, :tag_name, :month, :financial_year, :linked_entry_ids
+
+    def initialize(family:, tag_name:, month:, start_year:, linked_entry_ids: [])
+      @family = family
+      @tag_name = tag_name
+      @month = month
+      @financial_year = FinancialYear.new(start_year)
+      @linked_entry_ids = linked_entry_ids.map(&:to_i)
+    end
+
+    def results(query:, fy_filter:, account_id: nil)
+      scope = base_scope
+      scope = apply_fy_filter(scope, fy_filter)
+      scope = apply_account_filter(scope, account_id)
+      scope = apply_text_query(scope, query) if query.present?
+      scope.order(date: :desc).limit(100).to_a
+        .reject { |entry| linked_entry_ids.include?(entry.id) || already_tagged?(entry) }
+        .first(50)
+    end
+
+    def suggestions(linked_entries:)
+      range = (@month - 1.month).beginning_of_month..(@month + 1.month).end_of_month
+      scope = base_scope.where(date: range)
+      candidates = scope.order(date: :desc).limit(100).to_a
+      candidates.reject! { |entry| linked_entry_ids.include?(entry.id) || already_tagged?(entry) || exclude_from_suggestions?(entry) }
+      ranked = PropertyCellMatcher.new(linked_entries: linked_entries, month: @month).rank(candidates)
+      ranked.first(8).map(&:entry)
+    end
+
+    def exclude_from_suggestions?(entry)
+      entry.amount.abs.zero? ||
+        entry.transaction.transfer? ||
+        fee_like?(entry)
+    end
+
+    private
+
+      def base_scope
+        family.entries
+          .joins("INNER JOIN transactions ON transactions.id = entries.entryable_id AND entries.entryable_type = 'Transaction'")
+          .joins("LEFT JOIN merchants ON merchants.id = transactions.merchant_id")
+          .includes(:account, entryable: [ :tags, :merchant ])
+      end
+
+      def already_tagged?(entry)
+        entry.transaction.tags.any? { |t| t.name == tag_name || TagCatalog.declined?(t.name) }
+      end
+
+      def apply_fy_filter(scope, fy_filter)
+        return scope if fy_filter.blank? || fy_filter == "all"
+
+        fy = FinancialYear.new(fy_filter.to_i)
+        scope.where(date: fy.range)
+      end
+
+      def apply_account_filter(scope, account_id)
+        return scope if account_id.blank?
+
+        scope.where(account_id: account_id)
+      end
+
+      def apply_text_query(scope, query)
+        stripped = query.to_s.strip
+        return scope if stripped.blank?
+
+        amount = parse_amount(stripped)
+        if amount
+          scope.where("ABS(entries.amount) = :amount OR entries.amount = :neg", amount: amount, neg: -amount)
+        else
+          like = "%#{ActiveRecord::Base.sanitize_sql_like(stripped)}%"
+          scope.where(
+            "entries.name ILIKE :q OR COALESCE(entries.notes, '') ILIKE :q OR merchants.name ILIKE :q",
+            q: like
+          )
+        end
+      end
+
+      def parse_amount(query)
+        normalized = query.gsub(/[$,\s]/, "")
+        return nil unless normalized.match?(/\A-?\d+(?:\.\d+)?\z/)
+
+        BigDecimal(normalized.delete_prefix("-")).abs
+      rescue ArgumentError
+        nil
+      end
+
+      def fee_like?(entry)
+        entry.name.to_s.match?(FEE_NAME_PATTERN)
+      end
+  end
+end

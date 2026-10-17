@@ -1,51 +1,27 @@
-<%# locals: (entry:, tag_name:, month:, financial_year:, promoted: false, signals: {}) %>
-<% reasons = bills_match_reasons(
-     signals,
-     currency: entry.currency,
-     expected: nil,
-     actual: entry.amount.abs,
-     due_on: month.end_of_month,
-     paid_on: entry.date
-   ) %>
+<%# locals: (entry:, tag_name:, month:, financial_year:, fy_filter:, candidate_query:, account_id:) %>
 <% amount = format_money(entry.amount_money.abs) %>
 
-<% if promoted %>
-  <div class="bg-container-inset rounded-lg p-3 space-y-3">
-    <div class="flex items-start justify-between gap-3">
-      <div class="min-w-0 space-y-0.5">
-        <p class="text-sm font-medium text-primary truncate"><%= entry.name %></p>
-        <p class="text-xs text-secondary">
-          <%= l(entry.date, format: :short_with_year) %>
-          <% if entry.account %> &middot; <%= entry.account.name %><% end %>
-        </p>
-      </div>
-      <p class="text-sm font-medium text-primary privacy-sensitive shrink-0"><%= amount %></p>
-    </div>
-
-    <% if reasons.any? %>
-      <div class="flex flex-wrap gap-1.5">
-        <% reasons.each do |reason| %>
-          <%= render DS::Pill.new(label: reason, tone: :neutral, marker: false) %>
-        <% end %>
-      </div>
-    <% end %>
-
-    <%= button_to t("recurring_occurrences.show.link_payment"),
-          tax_property_cell_link_path,
-          params: { entry_id: entry.id, tag_name: tag_name, month: month.iso8601, start_year: financial_year.start_year },
-          class: "w-full rounded-lg bg-accent text-on-accent text-sm font-medium py-2" %>
+<div class="flex items-center justify-between gap-3 px-3 py-2">
+  <div class="min-w-0">
+    <p class="text-sm text-primary truncate"><%= entry.name %></p>
+    <p class="text-xs text-secondary truncate">
+      <%= l(entry.date, format: :short_with_year) %>
+      <% if entry.account %> &middot; <%= entry.account.name %><% end %>
+    </p>
   </div>
-<% else %>
-  <%= button_to tax_property_cell_link_path,
-        params: { entry_id: entry.id, tag_name: tag_name, month: month.iso8601, start_year: financial_year.start_year },
-        form_class: "w-full",
-        class: "w-full text-left flex items-center justify-between gap-3 px-3 py-3 rounded-lg hover:bg-container-inset" do %>
-    <span class="min-w-0">
-      <span class="block text-sm text-primary truncate"><%= entry.name %></span>
-      <span class="block text-xs text-secondary truncate">
-        <%= l(entry.date, format: :short_with_year) %><%= " · #{reasons.join(" · ")}" if reasons.any? %>
-      </span>
-    </span>
-    <span class="text-sm text-primary privacy-sensitive shrink-0"><%= amount %></span>
-  <% end %>
-<% end %>
+  <div class="flex items-center gap-2 shrink-0">
+    <span class="text-sm text-primary privacy-sensitive"><%= amount %></span>
+    <%= button_to t("tax.property.link"),
+          tax_property_cell_link_path,
+          params: {
+            entry_id: entry.id,
+            tag_name: tag_name,
+            month: month.iso8601,
+            start_year: financial_year.start_year,
+            fy: fy_filter,
+            q: candidate_query,
+            account_id: account_id
+          },
+          class: "text-xs font-medium text-accent" %>
+  </div>
+</div>

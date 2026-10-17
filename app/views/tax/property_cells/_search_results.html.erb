@@ -1,0 +1,57 @@
+<%# locals: (search_results:, tag_name:, month:, financial_year:, candidate_query:, fy_filter:, account_id:) %>
+<%= turbo_frame_tag "property_cell_search" do %>
+  <% if search_results.any? %>
+    <div class="divide-y divide-subdued bg-container-inset rounded-lg">
+      <% search_results.each do |entry| %>
+        <div class="flex items-center gap-3 px-3 py-2">
+          <%= check_box_tag "entry_ids[]",
+                entry.id,
+                false,
+                form: "property-cell-bulk-link",
+                class: "checkbox checkbox--light shrink-0",
+                id: dom_id(entry, :property_cell_select) %>
+          <label for="<%= dom_id(entry, :property_cell_select) %>" class="min-w-0 flex-1 cursor-pointer">
+            <p class="text-sm text-primary truncate"><%= entry.name %></p>
+            <p class="text-xs text-secondary truncate">
+              <%= l(entry.date, format: :short_with_year) %>
+              <% if entry.account %> &middot; <%= entry.account.name %><% end %>
+              <% if entry.notes.present? %> &middot; <%= entry.notes %><% end %>
+            </p>
+          </label>
+          <p class="text-sm text-primary privacy-sensitive shrink-0"><%= format_money(entry.amount_money.abs) %></p>
+          <%= form_with url: tax_property_cell_link_path,
+                method: :post,
+                data: { turbo_frame: "_top" },
+                class: "shrink-0" do %>
+            <%= hidden_field_tag :entry_id, entry.id %>
+            <%= hidden_field_tag :tag_name, tag_name %>
+            <%= hidden_field_tag :month, month.iso8601 %>
+            <%= hidden_field_tag :start_year, financial_year.start_year %>
+            <%= hidden_field_tag :fy, fy_filter %>
+            <%= hidden_field_tag :q, candidate_query %>
+            <%= hidden_field_tag :account_id, account_id %>
+            <%= submit_tag t("tax.property.link"), class: "text-xs font-medium text-accent cursor-pointer bg-transparent border-0 p-0" %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <%= form_with url: tax_property_cell_link_bulk_path,
+          method: :post,
+          id: "property-cell-bulk-link",
+          data: { turbo_frame: "_top" },
+          class: "flex justify-end pt-2" do %>
+      <%= hidden_field_tag :tag_name, tag_name %>
+      <%= hidden_field_tag :month, month.iso8601 %>
+      <%= hidden_field_tag :start_year, financial_year.start_year %>
+      <%= hidden_field_tag :fy, fy_filter %>
+      <%= hidden_field_tag :q, candidate_query %>
+      <%= hidden_field_tag :account_id, account_id %>
+      <%= render DS::Button.new(text: t("tax.property.link_selected"), variant: "primary", type: "submit") %>
+    <% end %>
+  <% else %>
+    <p class="text-sm text-secondary px-1 py-2">
+      <%= candidate_query.present? || account_id.present? ? t("tax.property.no_search_results") : t("tax.property.search_prompt") %>
+    </p>
+  <% end %>
+<% end %>
