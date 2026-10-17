@@ -24,7 +24,11 @@
 
       <% if @tags.any? %>
         <% @tags.each do |tag| %>
-          <%= render "tag/dropdowns/row", tag: tag, entry: @entry, selected: @selected_tag_ids.include?(tag.id) %>
+          <%= render "tag/dropdowns/row",
+                tag: tag,
+                entry: @entry,
+                selected: @selected_tag_ids.include?(tag.id),
+                tax_deductions_start_year: params[:tax_deductions_start_year] %>
         <% end %>
       <% else %>
         <p class="py-6 text-center text-sm text-secondary"><%= t(".empty") %></p>

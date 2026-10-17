@@ -1,8 +1,8 @@
-<%# locals: (transaction:, variant:, in_split_group: false) %>
+<%# locals: (transaction:, variant:, in_split_group: false, tax_deductions_start_year: nil) %>
 
 <div id="<%= dom_id(transaction, "category_menu_#{variant}") %>" class="min-w-0 overflow-hidden">
   <% if transaction.category_editable? %>
-    <%= render "categories/menu", transaction: transaction, in_split_group: in_split_group %>
+    <%= render "categories/menu", transaction: transaction, in_split_group: in_split_group, tax_deductions_start_year: tax_deductions_start_year %>
   <% else %>
     <% category = read_only_category(transaction) %>
     <% set_on_outflow = transaction.category_set_on_transfer_outflow? %>

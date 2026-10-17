@@ -39,7 +39,8 @@
           <%= render "tax/dashboard/deduction_attachments", entry: entry %>
           <%= render "entries/entry",
                 entry: entry,
-                view_ctx: for_review ? "tax_deductions_for_review" : "tax_deductions" %>
+                view_ctx: for_review ? "tax_deductions_for_review" : "tax_deductions",
+                tax_deductions_start_year: financial_year.start_year %>
         </div>
         <% if for_review && deductions %>
           <%= render "tax/dashboard/review_actions", entry: entry, financial_year: financial_year, deductions: deductions %>

@@ -43,6 +43,9 @@
             <%= hidden_field_tag "entry[entryable_type]", "Transaction", id: nil %>
             <%= hidden_field_tag "entry[entryable_attributes][id]", @transaction.id, id: nil %>
             <%= hidden_field_tag "entry[entryable_attributes][category_id]", nil, id: nil, data: { category_quick_create_target: "categoryIdField" } %>
+            <% if params[:tax_deductions_start_year].present? %>
+              <%= hidden_field_tag :tax_deductions_start_year, params[:tax_deductions_start_year], id: nil %>
+            <% end %>
           <% end %>
           <%= render DS::ActionRow.new(
                 icon: "plus",

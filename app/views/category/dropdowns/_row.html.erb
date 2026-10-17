@@ -11,6 +11,7 @@
   <%= button_to transaction_category_path(
         @transaction.entry,
         grouped: params[:grouped],
+        tax_deductions_start_year: params[:tax_deductions_start_year],
         entry: {
           entryable_type: "Transaction",
           entryable_attributes: { id: @transaction.id, category_id: category.id }

@@ -139,6 +139,7 @@ en:
       columns:
         name: "Name"
         category: "Category"
+        tags: "Tags"
         amount: "Amount"
       accept: "Accept and tag"
       accept_to_tag: "Move to tag"

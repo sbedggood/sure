@@ -1,4 +1,4 @@
-<%# locals: (entry:, transaction:, variant: :desktop) %>
+<%# locals: (entry:, transaction:, variant: :desktop, tax_deductions_start_year: nil) %>
 
 <%# Always mounted, even without tags, so the toggle stream can fill in the
     first tag. The mobile slot hides itself while the summary is empty
@@ -15,7 +15,7 @@
       <% end %>
 
       <% popover.with_custom_content do %>
-        <%= turbo_frame_tag "tag_dropdown", src: tag_dropdown_path(entry_id: entry.id), loading: :lazy do %>
+        <%= turbo_frame_tag "tag_dropdown", src: tag_dropdown_path(entry_id: entry.id, tax_deductions_start_year: tax_deductions_start_year), loading: :lazy do %>
           <div class="p-6 flex items-center justify-center">
             <p class="text-sm text-secondary animate-pulse"><%= t(".loading") %></p>
           </div>

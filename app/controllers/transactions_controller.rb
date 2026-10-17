@@ -1,4 +1,5 @@
 class TransactionsController < ApplicationController
+  include Tax::DeductionsTurboRefresh
   include EntryableResource
 
   before_action :set_entry_for_unlock, only: :unlock
@@ -284,9 +285,10 @@ class TransactionsController < ApplicationController
           streams << turbo_stream.replace(
             "#{dom_id(@entry, :tag_option)}_#{@toggled_tag.id}",
             partial: "tag/dropdowns/row",
-            locals: { tag: @toggled_tag, entry: @entry, selected: transaction.tag_ids.include?(@toggled_tag.id), autofocus: true }
+            locals: { tag: @toggled_tag, entry: @entry, selected: transaction.tag_ids.include?(@toggled_tag.id), autofocus: true, tax_deductions_start_year: params[:tax_deductions_start_year] }
           )
         end
+        append_tax_deductions_refresh(streams, params[:tax_deductions_start_year])
         render turbo_stream: streams
       end
     end

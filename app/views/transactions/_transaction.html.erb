@@ -1,4 +1,4 @@
-<%# locals: (entry:, balance_trend: nil, view_ctx: "global", in_split_group: false) %>
+<%# locals: (entry:, balance_trend: nil, view_ctx: "global", in_split_group: false, tax_deductions_start_year: nil) %>
 
 <% transaction = entry.entryable %>
 <% transaction_security_logo_url = transaction.activity_security&.display_logo_url %>
@@ -27,7 +27,11 @@
             } %>
 
         <div class="flex md:hidden items-center gap-1 col-span-2 relative shrink-0">
-          <%= render "transactions/transaction_category", transaction: transaction, variant: "mobile", in_split_group: in_split_group %>
+          <%= render "transactions/transaction_category",
+                transaction: transaction,
+                variant: "mobile",
+                in_split_group: in_split_group,
+                tax_deductions_start_year: tax_deductions_start_year %>
           <% if transaction_security_logo_url.present? %>
             <%= image_tag Setting.transform_brand_fetch_url(transaction_security_logo_url),
                 class: "w-5 h-5 rounded-full absolute -bottom-1 -right-1 border border-secondary pointer-events-none",
@@ -145,11 +149,13 @@
                     <% end %>
                   </div>
 
-                  <% unless view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
-                    <div class="md:hidden flex shrink-0 min-w-0 max-w-1/2 has-[[data-tag-empty]]:hidden">
-                      <%= render "tags/menu", entry: entry, transaction: transaction, variant: :mobile %>
-                    </div>
-                  <% end %>
+                  <div class="md:hidden flex shrink-0 min-w-0 max-w-1/2 has-[[data-tag-empty]]:hidden">
+                    <%= render "tags/menu",
+                          entry: entry,
+                          transaction: transaction,
+                          variant: :mobile,
+                          tax_deductions_start_year: tax_deductions_start_year %>
+                  </div>
                 </div>
 
                 <div class="text-secondary text-xs font-normal">
@@ -199,21 +205,24 @@
         <% if entry.account.supports_trades? && !transaction.transfer? %>
           <%# For investment/crypto accounts, show activity label instead of category %>
           <%= render "investment_activity/quick_edit_badge", entry: entry, entryable: transaction %>
-        <% elsif view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
-          <% category = read_only_category(transaction) %>
-          <%= render "categories/badge", category: category if category %>
         <% else %>
-          <%= render "transactions/transaction_category", transaction: transaction, variant: "desktop", in_split_group: in_split_group %>
+          <%= render "transactions/transaction_category",
+                transaction: transaction,
+                variant: "desktop",
+                in_split_group: in_split_group,
+                tax_deductions_start_year: tax_deductions_start_year %>
         <% end %>
       </div>
 
-      <% unless view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) %>
-        <div class="hidden md:flex md:w-1/5 md:shrink-0 lg:w-auto min-w-0 items-center col-span-2 pr-2" data-tag-fit-bounds="1">
-          <%= render "tags/menu", entry: entry, transaction: transaction, variant: :desktop %>
-        </div>
-      <% end %>
+      <div class="hidden md:flex md:w-1/5 md:shrink-0 lg:w-auto min-w-0 items-center col-span-2 pr-2" data-tag-fit-bounds="1">
+        <%= render "tags/menu",
+              entry: entry,
+              transaction: transaction,
+              variant: :desktop,
+              tax_deductions_start_year: tax_deductions_start_year %>
+      </div>
 
-      <% amount_col_span = view_ctx.in?(%w[tax_deductions tax_deductions_for_review]) ? "col-span-4 lg:col-span-4" : "col-span-4 lg:col-span-2" %>
+      <% amount_col_span = view_ctx == "tax_deductions_for_review" ? "col-span-4 lg:col-span-2" : "col-span-4 lg:col-span-2" %>
       <div class="shrink-0 <%= amount_col_span %> ml-auto flex items-center justify-end gap-2 <%= "opacity-50" if entry.excluded %> <%= "hidden lg:hidden" if view_ctx == "tax_deductions_for_review" %>">
         <%# Protection indicator - shows on hover when entry is protected from sync %>
         <% if entry.protected_from_sync? && !entry.excluded? %>

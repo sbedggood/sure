@@ -1,4 +1,4 @@
-<%# locals: (tag:, entry:, selected:, autofocus: false) %>
+<%# locals: (tag:, entry:, selected:, autofocus: false, tax_deductions_start_year: nil) %>
 
 <%= content_tag :div,
       id: "#{dom_id(entry, :tag_option)}_#{tag.id}",
@@ -9,7 +9,7 @@
       data: { filter_name: tag.name } do %>
   <%= button_to tags_transaction_path(entry),
         method: :patch,
-        params: { toggle_tag_id: tag.id },
+        params: { toggle_tag_id: tag.id, tax_deductions_start_year: tax_deductions_start_year },
         autofocus: autofocus,
         class: "flex w-full items-center gap-1.5 cursor-pointer" do %>
     <span class="flex items-center justify-center w-5 h-5 shrink-0">

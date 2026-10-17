@@ -1,5 +1,6 @@
 class TransactionCategoriesController < ApplicationController
   include ActionView::RecordIdentifier
+  include Tax::DeductionsTurboRefresh
 
   def update
     @entry = Current.accessible_entries.transactions.find(params[:transaction_id])
@@ -30,16 +31,16 @@ class TransactionCategoriesController < ApplicationController
     respond_to do |format|
       format.html { redirect_back_or_to transaction_path(@entry) }
       format.turbo_stream do
-        render turbo_stream: [
+        streams = [
           turbo_stream.replace(
             dom_id(transaction, "category_menu_mobile"),
             partial: "transactions/transaction_category",
-            locals: { transaction: transaction, variant: "mobile", in_split_group: in_split_group }
+            locals: { transaction: transaction, variant: "mobile", in_split_group: in_split_group, tax_deductions_start_year: params[:tax_deductions_start_year] }
           ),
           turbo_stream.replace(
             dom_id(transaction, "category_menu_desktop"),
             partial: "transactions/transaction_category",
-            locals: { transaction: transaction, variant: "desktop", in_split_group: in_split_group }
+            locals: { transaction: transaction, variant: "desktop", in_split_group: in_split_group, tax_deductions_start_year: params[:tax_deductions_start_year] }
           ),
           turbo_stream.replace(
             "category_name_mobile_#{transaction.id}",
@@ -47,7 +48,9 @@ class TransactionCategoriesController < ApplicationController
             locals: { transaction: transaction }
           ),
           *flash_notification_stream_items
-        ]
+        ].compact
+        append_tax_deductions_refresh(streams, params[:tax_deductions_start_year])
+        render turbo_stream: streams
       end
     end
   end

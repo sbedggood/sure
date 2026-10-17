@@ -550,6 +550,18 @@ class TransactionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ tags(:two).id ], @entry.reload.entryable.tag_ids
   end
 
+  test "tag toggle streams tax deductions refresh when requested" do
+    tax_tag = @user.family.tags.create!(name: "Tax: Phone", color: "#6471eb")
+    @user.family.tax_fy_settings.create!(start_year: 2025)
+
+    patch tags_transaction_url(@entry),
+      params: { toggle_tag_id: tax_tag.id, tax_deductions_start_year: 2025 },
+      as: :turbo_stream
+
+    assert_response :success
+    assert_select "turbo-stream[action=replace][target=?]", "tax-deductions"
+  end
+
   test "tag-only endpoint falls back to a redirect for plain HTML toggles" do
     @entry.entryable.update!(tag_ids: [], locked_attributes: {})
 
