@@ -4,7 +4,8 @@ module Tax
   class DocumentCatalog
     Row = Data.define(
       :id, :source, :filename, :byte_size, :fy_label, :start_year, :document_type,
-      :period_label, :tag_names, :entry_id, :tax_document_id, :entry_url, :preview_url, :download_url,
+      :period_label, :tag_names, :entry_id, :tax_document_id, :attachment_id,
+      :restorable_standalone, :entry_url, :preview_url, :download_url,
       :entry_name, :entry_amount, :account_name, :entry_date, :merchant_logo_url
     )
 
@@ -13,7 +14,7 @@ module Tax
     end
 
     def all_rows
-      uploaded_rows + attachment_rows
+      standalone_rows + attachment_rows
     end
 
     def rows_for_fy(start_year)
@@ -25,18 +26,16 @@ module Tax
 
     private
 
-      def uploaded_rows
-        @family.tax_documents.includes(file_attachment: :blob, entry: [ :account, { entryable: :merchant } ]).flat_map do |doc|
+      def standalone_rows
+        @family.tax_documents.unlinked.includes(file_attachment: :blob).flat_map do |doc|
           next [] unless doc.file.attached?
 
           fy = FinancialYear.new(doc.start_year)
-          linked = doc.entry
-          [ build_upload_row(doc, fy, linked) ]
+          [ build_standalone_row(doc, fy) ]
         end
       end
 
-      def build_upload_row(doc, fy, linked)
-        entry_meta = entry_metadata(linked)
+      def build_standalone_row(doc, fy)
         Row.new(
           id: "tax_document_#{doc.id}",
           source: :upload,
@@ -46,13 +45,15 @@ module Tax
           start_year: doc.start_year,
           document_type: doc.document_type,
           period_label: doc.document_date ? I18n.l(doc.document_date) : fy.label,
-          tag_names: linked ? linked.transaction.tags.select { |t| t.name.start_with?("Tax:") }.map(&:name) : [],
-          entry_id: linked&.id,
+          tag_names: [],
+          entry_id: nil,
           tax_document_id: doc.id,
-          entry_url: linked ? entry_path_for(linked) : nil,
+          attachment_id: nil,
+          restorable_standalone: false,
+          entry_url: nil,
           preview_url: preview_tax_document_path_for(doc),
           download_url: download_tax_document_path_for(doc),
-          **entry_meta
+          **empty_entry_metadata
         )
       end
 
@@ -60,6 +61,7 @@ module Tax
         tax_entries_with_attachments.flat_map do |entry|
           fy = financial_year_for_date(entry.date)
           tag_names = entry.transaction.tags.select { |t| t.name.start_with?("Tax:") }.map(&:name)
+          document_type = DocumentType.infer_from_tag_names(tag_names)
           entry_meta = entry_metadata(entry)
           entry.transaction.attachments.map do |attachment|
             Row.new(
@@ -69,11 +71,13 @@ module Tax
               byte_size: attachment.byte_size,
               fy_label: fy.label,
               start_year: fy.start_year,
-              document_type: "receipt",
+              document_type: document_type,
               period_label: I18n.l(entry.date),
               tag_names: tag_names,
               entry_id: entry.id,
               tax_document_id: nil,
+              attachment_id: attachment.id,
+              restorable_standalone: DocumentLinker.standalone_origin?(attachment),
               entry_url: entry_path_for(entry),
               preview_url: attachment_preview_path_for(attachment),
               download_url: Rails.application.routes.url_helpers.rails_blob_path(attachment, disposition: "attachment", only_path: true),
@@ -83,14 +87,18 @@ module Tax
         end
       end
 
-      def entry_metadata(entry)
-        return {
+      def empty_entry_metadata
+        {
           entry_name: nil,
           entry_amount: nil,
           account_name: nil,
           entry_date: nil,
           merchant_logo_url: nil
-        } unless entry
+        }
+      end
+
+      def entry_metadata(entry)
+        return empty_entry_metadata unless entry
 
         transaction = entry.transaction
         {

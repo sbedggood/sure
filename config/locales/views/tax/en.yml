@@ -90,6 +90,8 @@ en:
       link_prompt: "Link this document to a transaction for context."
       linked: "Document linked to transaction."
       unlinked: "Link removed."
+      restored_standalone: "Document moved back to your tax document library."
+      link_missing: "That document is not linked to a transaction."
       upload_sync_hint: "Uploaded files appear in the table once processing completes."
       viewer:
         title: "Document preview"
@@ -113,6 +115,8 @@ en:
       download: "Download"
       unlink: "Unlink"
       unlink_from_transaction: "Unlink from transaction"
+      restore_standalone: "Move back to document library"
+      confirm_restore_standalone: "Move this file back to standalone tax documents?"
       delete_document: "Delete document"
       uploaded_document: "Uploaded document (not linked to a transaction)"
       confirm_unlink_from_transaction: "Unlink this document from the transaction?"

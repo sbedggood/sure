@@ -6,6 +6,9 @@
     </div>
   <% end %>
   <% dialog.with_body do %>
+    <% if @entry.transaction.attachments.attached? %>
+      <span hidden data-auto-document-preview-url="<%= attachment_preview_tax_documents_path(attachment_id: @entry.transaction.attachments.first.id) %>"></span>
+    <% end %>
     <%# Potential duplicate alert %>
     <% if @entry.transaction.has_potential_duplicate? %>
       <% potential_match = @entry.transaction.potential_duplicate_entry %>

@@ -1,13 +1,10 @@
 <%# locals: (transaction:, can_upload: false, can_delete: false) %>
 <% entry = transaction.entry %>
-<% tax_documents = entry&.tax_documents&.includes(file_attachment: :blob) || [] %>
 <% has_files = transaction.attachments.any? %>
-<% has_tax_documents = tax_documents.any? %>
 
 <div id="transaction_attachments_<%= transaction.id %>" class="pb-4">
-  <% if entry %>
+  <% if entry && can_upload %>
     <%= render "transactions/link_tax_document", entry: entry, can_manage: can_upload %>
-    <%= render "transactions/linked_tax_documents", entry: entry, can_manage: can_upload %>
   <% end %>
   <!-- Upload Form -->
   <% if can_upload && transaction.attachments.count < Transaction::MAX_ATTACHMENTS_PER_TRANSACTION %>
@@ -96,15 +93,13 @@
             </div>
 
             <div class="flex items-center gap-2">
-              <%= render DS::Link.new(
-                    href: transaction_attachment_path(transaction, attachment, disposition: :inline),
-                    variant: :outline,
-                    size: :sm,
-                    icon: "eye",
-                    text: "",
+              <%= link_to attachment_preview_tax_documents_path(attachment_id: attachment.id),
+                    class: "inline-flex items-center justify-center p-2 rounded-md border border-primary text-primary hover:bg-surface-hover",
                     title: t("tax.documents_all.view"),
-                    target: "_blank"
-                  ) %>
+                    aria: { label: t("tax.documents_all.view") },
+                    data: { turbo_frame: "document_viewer" } do %>
+                <%= icon("eye", size: "sm") %>
+              <% end %>
 
               <%= render DS::Link.new(
                     href: transaction_attachment_path(transaction, attachment, disposition: :attachment),
@@ -126,12 +121,23 @@
                       confirm: CustomConfirm.for_resource_deletion("attachment")
                     ) %>
               <% end %>
+              <% if entry && can_upload && Tax::DocumentLinker.standalone_origin?(attachment) %>
+                <%= button_to tax_entry_attachment_restore_path(entry_id: entry.id),
+                      params: { attachment_id: attachment.id },
+                      method: :post,
+                      form: { data: { turbo_stream: true } },
+                      class: "inline-flex items-center justify-center p-2 rounded-md border border-primary text-primary hover:bg-surface-hover",
+                      title: t("tax.documents_all.restore_standalone"),
+                      aria: { label: t("tax.documents_all.restore_standalone") } do %>
+                  <%= icon("unlink", size: "sm") %>
+                <% end %>
+              <% end %>
             </div>
           </div>
         <% end %>
       </div>
     </div>
-  <% elsif !has_tax_documents %>
+  <% else %>
     <p class="text-sm text-secondary"><%= t(".no_attachments") %></p>
   <% end %>
 </div>

@@ -56,6 +56,28 @@ class Tax::DocumentCatalogTest < ActiveSupport::TestCase
     assert_includes row.download_url, "/tax/documents/#{doc.id}/download"
   end
 
+  test "infers payslip type from payslip tag on attachment rows" do
+    payslip_tag = @family.tags.create!(name: Tax::DocumentType::PAYSLIP_TAG, color: "#6471eb")
+    @entry.transaction.update!(tag_ids: (@entry.transaction.tag_ids + [ payslip_tag.id ]).uniq)
+
+    row = Tax::DocumentCatalog.new(family: @family).all_rows.find { |r| r.source == :transaction }
+    assert_equal "payslip", row.document_type
+  end
+
+  test "standalone uploads exclude linked legacy rows" do
+    linked = @family.tax_documents.new(
+      document_type: "payslip",
+      start_year: @start_year,
+      document_date: Date.new(2023, 5, 1),
+      entry: @entry
+    )
+    linked.file.attach(io: StringIO.new("pdf"), filename: "legacy.pdf", content_type: "application/pdf")
+    linked.save!
+
+    rows = Tax::DocumentCatalog.new(family: @family).all_rows
+    assert_nil rows.find { |r| r.tax_document_id == linked.id }
+  end
+
   test "filters rows by financial year" do
     catalog = Tax::DocumentCatalog.new(family: @family)
     fy_rows = catalog.rows_for_fy(@start_year)

@@ -85,12 +85,13 @@
                       data: { turbo: false } do %>
                   <%= icon("download", class: "w-5 h-5 text-primary") %>
                 <% end %>
-                <% if row.tax_document_id && row.entry_id %>
-                  <%= button_to tax_document_link_destroy_path(tax_document_id: row.tax_document_id),
-                        method: :delete,
-                        form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_from_transaction") } },
-                        title: t("tax.documents_all.unlink_from_transaction"),
-                        aria: { label: t("tax.documents_all.unlink_from_transaction") },
+                <% if row.attachment_id && row.restorable_standalone && row.entry_id %>
+                  <%= button_to tax_entry_attachment_restore_path(entry_id: row.entry_id),
+                        params: { attachment_id: row.attachment_id },
+                        method: :post,
+                        form: { data: { turbo_confirm: t("tax.documents_all.confirm_restore_standalone") } },
+                        title: t("tax.documents_all.restore_standalone"),
+                        aria: { label: t("tax.documents_all.restore_standalone") },
                         class: "p-0 border-0 bg-transparent" do %>
                     <%= icon("unlink", class: "w-5 h-5 text-primary") %>
                   <% end %>

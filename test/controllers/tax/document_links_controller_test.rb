@@ -29,26 +29,15 @@ class Tax::DocumentLinksControllerTest < ActionDispatch::IntegrationTest
     @document.save!
   end
 
-  test "create links document and refreshes attachments via turbo stream" do
+  test "create links document as transaction attachment via turbo stream" do
     post tax_document_link_create_path(tax_document_id: @document.id),
       params: { entry_id: @entry.id },
       as: :turbo_stream
 
     assert_response :success
-    assert_equal @entry.id, @document.reload.entry_id
+    assert_not TaxDocument.exists?(@document.id)
+    assert @entry.transaction.attachments.attached?
     assert_match "transaction_attachments_#{@entry.transaction.id}", response.body
-    assert_match "Linked tax documents", response.body
     assert_match "payslip.pdf", response.body
-  end
-
-  test "destroy unlinks document and refreshes attachments via turbo stream" do
-    @document.update!(entry: @entry)
-
-    delete tax_document_link_destroy_path(tax_document_id: @document.id), as: :turbo_stream
-
-    assert_response :success
-    assert_nil @document.reload.entry_id
-    assert_match "transaction_attachments_#{@entry.transaction.id}", response.body
-    assert_no_match "Linked tax documents", response.body
   end
 end

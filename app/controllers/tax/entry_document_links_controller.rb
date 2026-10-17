@@ -4,8 +4,8 @@ module Tax
   class EntryDocumentLinksController < ApplicationController
     def create
       entry = Current.accessible_entries.find(params[:entry_id])
-      document = Current.family.tax_documents.find(params[:tax_document_id])
-      document.update!(entry: entry)
+      document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
+      DocumentLinker.new(family: Current.family).link_to_entry!(tax_document: document, entry: entry)
 
       respond_to do |format|
         format.html { redirect_to entry_path(entry), notice: t("tax.documents.linked") }

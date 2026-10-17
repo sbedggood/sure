@@ -35,7 +35,7 @@ class Tax::EntryDocumentLinksControllerTest < ActionDispatch::IntegrationTest
       as: :turbo_stream
 
     assert_response :success
-    assert_equal @entry.id, @document.reload.entry_id
+    assert_not TaxDocument.exists?(@document.id)
     assert_match "payslip.pdf", response.body
   end
 end

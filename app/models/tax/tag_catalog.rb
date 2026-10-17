@@ -24,6 +24,7 @@ module Tax
     RENTAL_INCOME_PREFIX = "Tax: Rental Income"
     FOR_REVIEW_TAG = "Tax: For Review"
     DECLINED_TAG = "Tax: Declined"
+    PAYSLIP_TAG = DocumentType::PAYSLIP_TAG
     DONATIONS_TAG = "Tax: Donations"
     AGENT_FEES_TAG = "Tax: Agent Fees"
     PROPERTY_PREFIX = "Tax: Property - "

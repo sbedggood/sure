@@ -5,21 +5,20 @@ module Tax
     include Tax::StartYearFromParams
 
     def show
-      @document = Current.family.tax_documents.find(params[:tax_document_id])
+      @document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
       @query = params[:q]
       @candidates = search_candidates
       render layout: false
     end
 
     def create
-      document = Current.family.tax_documents.find(params[:tax_document_id])
+      document = Current.family.tax_documents.unlinked.find(params[:tax_document_id])
       entry = Current.accessible_entries.find(params[:entry_id])
-      document.update!(entry: entry)
+      DocumentLinker.new(family: Current.family).link_to_entry!(tax_document: document, entry: entry)
 
       respond_to do |format|
         format.html do
-          redirect_to tax_document_link_path(tax_document_id: document.id),
-            notice: t("tax.documents.linked")
+          redirect_to entry_path(entry), notice: t("tax.documents.linked")
         end
         format.turbo_stream do
           render turbo_stream: attachment_refresh_stream(entry)
@@ -29,20 +28,15 @@ module Tax
 
     def destroy
       document = Current.family.tax_documents.find(params[:tax_document_id])
-      entry = document.entry
-      document.update!(entry_id: nil)
-
-      respond_to do |format|
-        format.html do
-          redirect_to tax_document_link_path(tax_document_id: document.id),
-            notice: t("tax.documents.unlinked")
-        end
-        format.turbo_stream do
-          streams = []
-          streams << attachment_refresh_stream(entry) if entry
-          render turbo_stream: streams
-        end
+      if document.entry_id.present?
+        entry = document.entry
+        document.update!(entry_id: nil)
+        redirect_to tax_document_link_path(tax_document_id: document.id),
+          notice: t("tax.documents.unlinked")
+        return
       end
+
+      redirect_to tax_dashboard_path(section: "documents"), alert: t("tax.documents.link_missing")
     end
 
     private

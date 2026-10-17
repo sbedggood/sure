@@ -45,9 +45,24 @@ export default class extends Controller {
 
   onFrameLoad(event) {
     const frame = event.target;
+
+    if (frame.id === "drawer") {
+      this.maybeAutoOpenDrawerAttachment(frame);
+      this.scheduleLayout();
+      return;
+    }
+
     if (frame.id !== "document_viewer" && !frame.querySelector?.("#document_viewer")) return;
 
     this.scheduleLayout();
+  }
+
+  maybeAutoOpenDrawerAttachment(drawerFrame) {
+    const marker = drawerFrame.querySelector("[data-auto-document-preview-url]");
+    const url = marker?.getAttribute("data-auto-document-preview-url");
+    if (!url) return;
+
+    Turbo.visit(url, { frame: "document_viewer" });
   }
 
   onTransitionEnd(event) {
@@ -106,10 +121,12 @@ export default class extends Controller {
     const host = this.element;
     if (!this.hasPanelTarget) {
       host.classList.add("pointer-events-none");
+      this.hidePopoverLayer();
       return;
     }
 
     host.classList.remove("pointer-events-none");
+    this.showPopoverLayer();
 
     const panel = this.panelTarget;
     const viewportWidth = window.innerWidth;
@@ -191,5 +208,15 @@ export default class extends Controller {
   isDrawerTransition(target) {
     const drawer = document.querySelector("turbo-frame#drawer");
     return Boolean(drawer && drawer.contains(target));
+  }
+
+  showPopoverLayer() {
+    if (typeof this.element.showPopover !== "function") return;
+    if (!this.element.matches(":popover-open")) this.element.showPopover();
+  }
+
+  hidePopoverLayer() {
+    if (typeof this.element.hidePopover !== "function") return;
+    if (this.element.matches(":popover-open")) this.element.hidePopover();
   }
 }

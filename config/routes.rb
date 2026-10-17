@@ -478,6 +478,7 @@ Rails.application.routes.draw do
       end
     end
     post "entries/:entry_id/document_links", to: "entry_document_links#create", as: :entry_document_link
+    post "entries/:entry_id/attachment_restores", to: "attachment_restores#create", as: :entry_attachment_restore
     delete "document_attachments", to: "document_attachments#destroy", as: :document_attachment
     get "export", to: "exports#show", as: :export
   end
