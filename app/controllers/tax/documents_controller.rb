@@ -4,7 +4,7 @@ module Tax
   class DocumentsController < ApplicationController
     include Tax::StartYearFromParams
 
-    before_action :set_document, only: %i[show destroy]
+    before_action :set_document, only: %i[preview download destroy]
     before_action :set_breadcrumbs, only: %i[index new]
 
     def index
@@ -38,8 +38,43 @@ module Tax
       end
     end
 
-    def show
-      redirect_to rails_blob_path(@document.file, disposition: "attachment")
+    def preview
+      assign_preview_sources(
+        filename: @document.file.filename.to_s,
+        inline_src: @document.inline_blob_path,
+        download_src: download_tax_document_path(@document),
+        image: @document.file.image?
+      )
+      render layout: false
+    end
+
+    def attachment_preview
+      attachment = ActiveStorage::Attachment.find(params[:attachment_id])
+      transaction = attachment.record
+      unless transaction.is_a?(Transaction)
+        raise ActiveRecord::RecordNotFound
+      end
+
+      entry = transaction.entry
+      unless entry && entry.account.family_id == Current.family.id
+        raise ActiveRecord::RecordNotFound
+      end
+
+      assign_preview_sources(
+        filename: attachment.filename.to_s,
+        inline_src: rails_blob_path(attachment, disposition: "inline", only_path: true),
+        download_src: rails_blob_path(attachment, disposition: "attachment", only_path: true),
+        image: attachment.image?
+      )
+      render :preview, layout: false
+    end
+
+    def preview_clear
+      render layout: false
+    end
+
+    def download
+      redirect_to rails_blob_path(@document.file, disposition: "attachment", only_path: true)
     end
 
     def destroy
@@ -84,6 +119,13 @@ module Tax
         path
       rescue URI::InvalidURIError
         tax_dashboard_path(section: "documents")
+      end
+
+      def assign_preview_sources(filename:, inline_src:, download_src:, image:)
+        @filename = filename
+        @inline_src = inline_src
+        @download_src = download_src
+        @image = image
       end
   end
 end

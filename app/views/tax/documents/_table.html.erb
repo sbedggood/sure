@@ -26,12 +26,14 @@
                 <% elsif row.entry_id %>
                   <%= render DS::FilledIcon.new(variant: :text, text: row.entry_name, size: "md", rounded: true) %>
                 <% else %>
-                  <%= icon("file-text", size: "sm", class: "text-secondary") %>
+                  <span title="<%= t("tax.documents_all.uploaded_document") %>">
+                    <%= icon("file-text", size: "sm", class: "text-secondary") %>
+                  </span>
                 <% end %>
               </td>
               <td class="px-3 py-3 text-sm min-w-0">
                 <% if row.entry_id %>
-                  <%= link_to row.entry_name, row.view_url, class: "font-medium text-primary hover:underline block truncate", data: { turbo_frame: "drawer" } %>
+                  <%= link_to row.entry_name, row.entry_url, class: "font-medium text-primary hover:underline block truncate", data: { turbo_frame: "drawer" } %>
                 <% else %>
                   <span class="font-medium text-primary">—</span>
                 <% end %>
@@ -45,7 +47,10 @@
               <td class="px-3 py-3 text-sm text-secondary"><%= row.entry_date ? l(row.entry_date) : "—" %></td>
             <% end %>
             <td class="px-3 py-3 text-sm min-w-0">
-              <%= link_to row.view_url, class: "block min-w-0 hover:underline", data: row.entry_id ? { turbo_frame: "drawer" } : {} do %>
+              <%= link_to row.preview_url,
+                    class: "block min-w-0 hover:underline",
+                    title: t("tax.documents_all.view"),
+                    data: { turbo_frame: "document_viewer" } do %>
                 <span class="block truncate font-medium text-primary"><%= row.filename %></span>
                 <span class="text-xs text-secondary"><%= number_to_human_size(row.byte_size) %></span>
               <% end %>
@@ -62,24 +67,49 @@
                 <%= render DS::Link.new(
                       text: t("tax.documents_all.view"),
                       variant: "ghost",
-                      href: row.view_url,
-                      frame: row.entry_id ? "drawer" : "_top",
+                      href: row.preview_url,
+                      frame: "document_viewer",
                       class: "text-xs shrink-0"
                     ) %>
                 <% if row.tax_document_id %>
-                  <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id), aria: { label: t("tax.documents_all.link") }, data: { turbo_frame: "drawer" } do %>
+                  <%= link_to tax_document_link_path(tax_document_id: row.tax_document_id),
+                        title: t("tax.documents_all.link"),
+                        aria: { label: t("tax.documents_all.link") },
+                        data: { turbo_frame: "drawer" } do %>
                     <%= icon("link-2", class: "w-5 h-5 text-primary") %>
                   <% end %>
                 <% end %>
-                <%= link_to row.download_url, aria: { label: t("tax.documents_all.download") } do %>
+                <%= link_to row.download_url,
+                      title: t("tax.documents_all.download"),
+                      aria: { label: t("tax.documents_all.download") },
+                      data: { turbo: false } do %>
                   <%= icon("download", class: "w-5 h-5 text-primary") %>
                 <% end %>
-                <% if row.tax_document_id %>
-                  <%= button_to tax_document_path(row.tax_document_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                <% if row.tax_document_id && row.entry_id %>
+                  <%= button_to tax_document_link_destroy_path(tax_document_id: row.tax_document_id),
+                        method: :delete,
+                        form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_from_transaction") } },
+                        title: t("tax.documents_all.unlink_from_transaction"),
+                        aria: { label: t("tax.documents_all.unlink_from_transaction") },
+                        class: "p-0 border-0 bg-transparent" do %>
                     <%= icon("unlink", class: "w-5 h-5 text-primary") %>
                   <% end %>
+                <% elsif row.tax_document_id %>
+                  <%= button_to tax_document_path(row.tax_document_id),
+                        method: :delete,
+                        form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink") } },
+                        title: t("tax.documents_all.delete_document"),
+                        aria: { label: t("tax.documents_all.delete_document") },
+                        class: "p-0 border-0 bg-transparent" do %>
+                    <%= icon("trash-2", class: "w-5 h-5 text-primary") %>
+                  <% end %>
                 <% elsif row.entry_id %>
-                  <%= button_to tax_document_attachment_path(entry_id: row.entry_id), method: :delete, form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_tags") } }, aria: { label: t("tax.documents_all.unlink") }, class: "p-0 border-0 bg-transparent" do %>
+                  <%= button_to tax_document_attachment_path(entry_id: row.entry_id),
+                        method: :delete,
+                        form: { data: { turbo_confirm: t("tax.documents_all.confirm_unlink_tags") } },
+                        title: t("tax.documents_all.unlink"),
+                        aria: { label: t("tax.documents_all.unlink") },
+                        class: "p-0 border-0 bg-transparent" do %>
                     <%= icon("unlink", class: "w-5 h-5 text-primary") %>
                   <% end %>
                 <% end %>

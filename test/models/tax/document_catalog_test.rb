@@ -33,6 +33,27 @@ class Tax::DocumentCatalogTest < ActiveSupport::TestCase
     assert_equal "receipt.pdf", attachment.filename
     assert_includes attachment.tag_names, "Tax: Phone"
     assert_equal @entry.id, attachment.entry_id
+    assert_includes attachment.preview_url, "/tax/documents/attachment_preview"
+    assert_includes attachment.download_url, "disposition=attachment"
+  end
+
+  test "uploaded tax documents expose preview and download paths" do
+    doc = @family.tax_documents.new(
+      document_type: "payslip",
+      start_year: @start_year,
+      document_date: Date.new(2023, 5, 1)
+    )
+    doc.file.attach(
+      io: StringIO.new("pdf"),
+      filename: "payslip.pdf",
+      content_type: "application/pdf"
+    )
+    doc.save!
+
+    row = Tax::DocumentCatalog.new(family: @family).all_rows.find { |r| r.tax_document_id == doc.id }
+    assert row
+    assert_includes row.preview_url, "/tax/documents/#{doc.id}/preview"
+    assert_includes row.download_url, "/tax/documents/#{doc.id}/download"
   end
 
   test "filters rows by financial year" do

@@ -1,0 +1,32 @@
+<%= turbo_frame_tag "document_viewer" do %>
+  <div class="flex flex-col h-full min-h-[50vh] lg:min-h-0 bg-container shadow-border-xs border-l border-primary lg:m-3 lg:rounded-xl overflow-hidden pointer-events-auto"
+       role="complementary"
+       aria-label="<%= t("tax.documents.viewer.title") %>">
+    <div class="flex items-center justify-between gap-2 px-4 py-3 border-b border-subdued shrink-0">
+      <p class="text-sm font-medium text-primary truncate min-w-0"><%= @filename %></p>
+      <div class="flex items-center gap-1 shrink-0">
+        <%= link_to @download_src,
+              class: "inline-flex items-center justify-center p-2 rounded-md text-primary hover:bg-surface-hover",
+              title: t("tax.documents_all.download"),
+              aria: { label: t("tax.documents_all.download") },
+              data: { turbo: false } do %>
+          <%= icon("download", size: "sm") %>
+        <% end %>
+        <%= link_to preview_clear_tax_documents_path,
+              class: "inline-flex items-center justify-center p-2 rounded-md text-primary hover:bg-surface-hover",
+              title: t("tax.documents.viewer.close"),
+              aria: { label: t("tax.documents.viewer.close") },
+              data: { turbo_frame: "document_viewer" } do %>
+          <%= icon("x", size: "sm") %>
+        <% end %>
+      </div>
+    </div>
+    <div class="flex-1 min-h-0 bg-surface-inset">
+      <% if @image %>
+        <img src="<%= @inline_src %>" alt="<%= @filename %>" class="w-full h-full object-contain" />
+      <% else %>
+        <iframe src="<%= @inline_src %>" class="w-full h-full border-0" title="<%= @filename %>"></iframe>
+      <% end %>
+    </div>
+  </div>
+<% end %>

@@ -4,7 +4,7 @@ module Tax
   class DocumentCatalog
     Row = Data.define(
       :id, :source, :filename, :byte_size, :fy_label, :start_year, :document_type,
-      :period_label, :tag_names, :entry_id, :tax_document_id, :view_url, :download_url,
+      :period_label, :tag_names, :entry_id, :tax_document_id, :entry_url, :preview_url, :download_url,
       :entry_name, :entry_amount, :account_name, :entry_date, :merchant_logo_url
     )
 
@@ -49,8 +49,9 @@ module Tax
           tag_names: linked ? linked.transaction.tags.select { |t| t.name.start_with?("Tax:") }.map(&:name) : [],
           entry_id: linked&.id,
           tax_document_id: doc.id,
-          view_url: linked ? entry_path_for(linked) : tax_document_path_for(doc),
-          download_url: tax_document_path_for(doc),
+          entry_url: linked ? entry_path_for(linked) : nil,
+          preview_url: preview_tax_document_path_for(doc),
+          download_url: download_tax_document_path_for(doc),
           **entry_meta
         )
       end
@@ -73,7 +74,8 @@ module Tax
               tag_names: tag_names,
               entry_id: entry.id,
               tax_document_id: nil,
-              view_url: entry_path_for(entry),
+              entry_url: entry_path_for(entry),
+              preview_url: attachment_preview_path_for(attachment),
               download_url: Rails.application.routes.url_helpers.rails_blob_path(attachment, disposition: "attachment", only_path: true),
               **entry_meta
             )
@@ -120,8 +122,19 @@ module Tax
         Rails.application.routes.url_helpers.entry_path(entry, only_path: true)
       end
 
-      def tax_document_path_for(doc)
-        Rails.application.routes.url_helpers.tax_document_path(doc, only_path: true)
+      def preview_tax_document_path_for(doc)
+        Rails.application.routes.url_helpers.preview_tax_document_path(doc, only_path: true)
+      end
+
+      def download_tax_document_path_for(doc)
+        Rails.application.routes.url_helpers.download_tax_document_path(doc, only_path: true)
+      end
+
+      def attachment_preview_path_for(attachment)
+        Rails.application.routes.url_helpers.attachment_preview_tax_documents_path(
+          attachment_id: attachment.id,
+          only_path: true
+        )
       end
   end
 end

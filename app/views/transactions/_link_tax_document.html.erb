@@ -1,0 +1,27 @@
+<%# locals: (entry:, can_manage:) %>
+<% return unless can_manage %>
+
+<% unlinked_documents = Current.family.tax_documents.unlinked.includes(file_attachment: :blob).order(document_date: :desc, created_at: :desc).limit(25) %>
+<% return if unlinked_documents.none? %>
+
+<details class="mb-4 rounded-lg border border-subdued bg-surface-inset">
+  <summary class="cursor-pointer px-3 py-2 text-sm font-medium text-primary">
+    <%= t(".link_tax_document") %>
+  </summary>
+  <div class="divide-y divide-subdued border-t border-subdued max-h-48 overflow-y-auto">
+    <% unlinked_documents.each do |document| %>
+      <% next unless document.file.attached? %>
+      <div class="flex items-center justify-between gap-3 px-3 py-2">
+        <div class="min-w-0">
+          <p class="text-sm text-primary truncate"><%= document.file.filename %></p>
+          <p class="text-xs text-secondary"><%= document.document_type %></p>
+        </div>
+        <%= button_to t(".link"),
+              tax_entry_document_link_path(entry_id: entry.id),
+              params: { tax_document_id: document.id },
+              form: { data: { turbo_stream: true } },
+              class: "text-xs font-medium text-accent shrink-0" %>
+      </div>
+    <% end %>
+  </div>
+</details>

@@ -1,6 +1,14 @@
 <%# locals: (transaction:, can_upload: false, can_delete: false) %>
+<% entry = transaction.entry %>
+<% tax_documents = entry&.tax_documents&.includes(file_attachment: :blob) || [] %>
+<% has_files = transaction.attachments.any? %>
+<% has_tax_documents = tax_documents.any? %>
 
 <div id="transaction_attachments_<%= transaction.id %>" class="pb-4">
+  <% if entry %>
+    <%= render "transactions/link_tax_document", entry: entry, can_manage: can_upload %>
+    <%= render "transactions/linked_tax_documents", entry: entry, can_manage: can_upload %>
+  <% end %>
   <!-- Upload Form -->
   <% if can_upload && transaction.attachments.count < Transaction::MAX_ATTACHMENTS_PER_TRANSACTION %>
     <%= styled_form_with url: transaction_attachments_path(transaction),
@@ -67,7 +75,7 @@
   <% end %>
 
   <!-- Attachments List -->
-  <% if transaction.attachments.any? %>
+  <% if has_files %>
     <div class="space-y-2">
       <h4 class="text-sm font-medium text-primary"><%= t(".files", count: transaction.attachments.count) %></h4>
       <div class="space-y-2">
@@ -94,6 +102,7 @@
                     size: :sm,
                     icon: "eye",
                     text: "",
+                    title: t("tax.documents_all.view"),
                     target: "_blank"
                   ) %>
 
@@ -103,6 +112,7 @@
                     size: :sm,
                     icon: "download",
                     text: "",
+                    title: t("tax.documents_all.download"),
                     data: { turbo: false }
                   ) %>
 
@@ -121,7 +131,7 @@
         <% end %>
       </div>
     </div>
-  <% else %>
+  <% elsif !has_tax_documents %>
     <p class="text-sm text-secondary"><%= t(".no_attachments") %></p>
   <% end %>
 </div>

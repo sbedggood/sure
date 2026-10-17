@@ -91,6 +91,9 @@ en:
       linked: "Document linked to transaction."
       unlinked: "Link removed."
       upload_sync_hint: "Uploaded files appear in the table once processing completes."
+      viewer:
+        title: "Document preview"
+        close: "Close preview"
     documents_all:
       page_title: "Documents"
       subtitle: "Tax receipts, payslips and supporting documents"
@@ -109,6 +112,10 @@ en:
       edit: "Edit"
       download: "Download"
       unlink: "Unlink"
+      unlink_from_transaction: "Unlink from transaction"
+      delete_document: "Delete document"
+      uploaded_document: "Uploaded document (not linked to a transaction)"
+      confirm_unlink_from_transaction: "Unlink this document from the transaction?"
       empty: "No tax documents or tagged receipts yet."
       filter_fy: "Financial year"
       all_fys: "All financial years"
@@ -144,5 +151,6 @@ en:
       accept: "Accept and tag"
       accept_to_tag: "Move to tag"
       decline: "Decline"
+      save_business_use: "Save business use percentage"
       review_updated: "Review updated."
       accept_missing_tag: "Choose a valid tax tag."

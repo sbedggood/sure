@@ -32,6 +32,8 @@
     <% else %>
       <%= turbo_frame_tag "drawer" %>
     <% end %>
+    <%= turbo_frame_tag "document_viewer",
+          class: "fixed z-[45] inset-y-0 right-0 flex w-full max-w-xl pointer-events-none empty:hidden lg:right-[566px] lg:max-w-[min(50vw,640px)] [&:not(:empty)]:pointer-events-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" %>
 
     <%# Custom overrides for browser's confirm API  %>
     <%= render "layouts/shared/confirm_dialog" %>

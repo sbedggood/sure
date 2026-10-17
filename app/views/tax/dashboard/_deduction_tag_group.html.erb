@@ -27,7 +27,7 @@
             settings.business_use_percent_for(group.tag),
             step: 0.01, class: "w-14 rounded border border-primary bg-container px-1 py-0.5 text-xs" %>
           <span class="text-secondary">%</span>
-          <%= submit_tag "↵", class: "text-xs text-accent" %>
+          <%= submit_tag "↵", class: "text-xs text-accent", title: t("tax.deductions.save_business_use") %>
         <% end %>
       <% end %>
     </div>

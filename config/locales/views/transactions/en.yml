@@ -382,6 +382,11 @@ en:
         toggle_selection_checkboxes: Toggle all checkboxes
         search_placeholder: "Search transactions ..."
         filter: "Filter"
+    link_tax_document:
+      link_tax_document: "Link an uploaded tax document"
+      link: "Link"
+    linked_tax_documents:
+      linked_tax_documents_heading: "Linked tax documents"
     attachments:
       cannot_exceed: "Cannot exceed %{count} attachments per transaction"
       uploaded_one: "Attachment uploaded successfully"

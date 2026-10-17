@@ -41,6 +41,7 @@
               <%= button_to t("tax.property.link"),
                     tax_document_link_create_path(tax_document_id: @document.id),
                     params: { entry_id: entry.id },
+                    form: { data: { turbo_stream: true } },
                     class: "text-sm text-accent shrink-0" %>
             </div>
           <% end %>
