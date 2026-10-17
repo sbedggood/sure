@@ -32,8 +32,13 @@
     <% else %>
       <%= turbo_frame_tag "drawer" %>
     <% end %>
-    <%= turbo_frame_tag "document_viewer",
-          class: "fixed z-[45] inset-y-0 right-0 flex w-full max-w-xl pointer-events-none empty:hidden lg:right-[566px] lg:max-w-[min(50vw,640px)] [&:not(:empty)]:pointer-events-auto pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]" %>
+    <div id="document_viewer_host"
+         class="fixed z-[45] inset-0 pointer-events-none"
+         data-controller="document-viewer hotkey"
+         data-document-viewer-clear-url-value="<%= preview_clear_tax_documents_path %>"
+         data-hotkey="esc:document-viewer#close">
+      <%= turbo_frame_tag "document_viewer", class: "contents" %>
+    </div>
 
     <%# Custom overrides for browser's confirm API  %>
     <%= render "layouts/shared/confirm_dialog" %>
