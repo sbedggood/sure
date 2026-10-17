@@ -1,6 +1,6 @@
 <%# locals: (entry:, financial_year:, deductions:) %>
-<div class="absolute right-4 top-3 z-20 flex items-center gap-1 bg-container/80 rounded-md px-1">
-  <%= form_with url: tax_review_accept_path, method: :post, class: "flex items-center gap-1" do %>
+<div class="flex flex-wrap items-center justify-end gap-2 px-4 py-2 border-t border-subdued bg-surface-inset">
+  <%= form_with url: tax_review_accept_path, method: :post, class: "flex flex-wrap items-center justify-end gap-2 min-w-0" do %>
     <%= hidden_field_tag :entry_id, entry.id %>
     <%= hidden_field_tag :start_year, financial_year.start_year %>
     <%= select_tag :tag_id,
@@ -9,16 +9,16 @@
         :id, :name
       ),
       include_blank: false,
-      class: "rounded-md border border-primary bg-container px-1 py-0.5 text-xs max-w-32",
+      class: "min-w-0 max-w-[11rem] truncate rounded-md border border-primary bg-container px-2 py-1 text-xs",
       title: t("tax.deductions.accept_to_tag") %>
-    <button type="submit" class="text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1" title="<%= t("tax.deductions.accept") %>">
+    <button type="submit" class="text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1 shrink-0" title="<%= t("tax.deductions.accept") %>">
       <%= icon "check", size: "sm" %>
     </button>
   <% end %>
 
   <%= button_to tax_review_decline_path,
         params: { entry_id: entry.id, start_year: financial_year.start_year },
-        class: "text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1",
+        class: "text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1 shrink-0",
         title: t("tax.deductions.decline") do %>
     <%= icon "x", size: "sm", class: "text-subdued hover:text-primary" %>
   <% end %>

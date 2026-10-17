@@ -46,7 +46,7 @@
         <span class="text-primary font-medium"><%= property[:wfh_hours_total] %> h WFH</span>,
         <span class="text-primary font-medium"><%= property[:km_total] %> km</span>
       </p>
-      <%= render DS::Button.new(text: t("tax.calendar.save"), type: "submit") %>
+      <%= render DS::Button.new(text: t("tax.calendar.save"), variant: "primary", type: "submit") %>
     </div>
   <% end %>
 </div>

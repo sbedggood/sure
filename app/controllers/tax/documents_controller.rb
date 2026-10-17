@@ -5,6 +5,7 @@ module Tax
     include Tax::StartYearFromParams
 
     before_action :set_document, only: %i[show destroy]
+    before_action :set_breadcrumbs, only: %i[index new]
 
     def index
       @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
@@ -50,6 +51,13 @@ module Tax
     end
 
     private
+
+      def set_breadcrumbs
+        @breadcrumbs = [
+          [ I18n.t("breadcrumbs.home"), root_path ],
+          [ I18n.t("breadcrumbs.documents"), nil ]
+        ]
+      end
 
       def set_document
         @document = Current.family.tax_documents.find(params[:id])

@@ -1,10 +1,32 @@
 <% content_for :title, t("tax.documents_all.page_title") %>
 
-<div class="space-y-4 pb-6 lg:pb-12 flex flex-col">
-  <header class="flex justify-between items-center gap-4 text-primary font-medium">
-    <h1 class="text-xl"><%= t("tax.documents_all.page_title") %></h1>
-  </header>
+<% content_for :page_header do %>
+  <div class="space-y-4 mb-6">
+    <header class="flex justify-between items-center text-primary font-medium gap-4">
+      <div class="space-y-1 min-w-0">
+        <h1 class="text-xl lg:text-3xl font-medium text-primary">
+          <%= t("tax.documents_all.page_title") %>
+        </h1>
+        <p class="text-sm lg:text-base text-secondary">
+          <%= t("tax.documents_all.subtitle") %>
+        </p>
+      </div>
 
+      <%= render DS::Link.new(
+            text: t("tax.documents.upload"),
+            icon: "plus",
+            variant: "primary",
+            href: new_tax_document_path(
+              start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
+              return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type)
+            ),
+            frame: :modal
+          ) %>
+    </header>
+  </div>
+<% end %>
+
+<div class="w-full lg:pb-6">
   <%= render "tax/documents/section",
         rows: @rows,
         doc_scope: "all",

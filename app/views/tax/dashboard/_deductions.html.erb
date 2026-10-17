@@ -7,7 +7,7 @@
     <%= hidden_field_tag :return_section, "deductions" %>
     <%= form.number_field "tax_fy_setting[wfh_hourly_rate]", label: t("tax.deductions.wfh_rate"), value: settings.wfh_hourly_rate, step: 0.01, class: "max-w-[8rem]" %>
     <%= form.number_field "tax_fy_setting[car_rate_per_km]", label: t("tax.deductions.car_rate"), value: settings.car_rate_per_km, step: 0.01, class: "max-w-[8rem]" %>
-    <%= render DS::Button.new(text: t("tax.property.save_settings"), type: "submit") %>
+    <%= render DS::Button.new(text: t("tax.property.save_settings"), variant: "primary", type: "submit") %>
   <% end %>
   <p class="text-sm text-secondary">
     <span class="text-primary font-medium"><%= t("tax.deductions.home_office") %>:</span>

@@ -1,7 +1,14 @@
 en:
   tax:
     title: "Tax"
+    subtitle: "%{fy} · %{start} – %{end}"
     fy_label: "Financial year (ATO)"
+    summary:
+      deductions_claim: "Deductions claim"
+      rental_income: "Rental income"
+      property_net: "Property net"
+      expected_return: "Expected tax return"
+      pending_review: "Pending review"
     sections:
       aria_label: "Tax sections"
       calendar: "Weekly calendar"
@@ -75,6 +82,7 @@ en:
       upload_sync_hint: "Uploaded files appear in the table once processing completes."
     documents_all:
       page_title: "Documents"
+      subtitle: "Tax receipts, payslips and supporting documents"
       title: "Documents"
       merchant: "Merchant / name"
       amount: "Amount"
