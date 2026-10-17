@@ -28,12 +28,7 @@
       <span class="text-primary font-medium"><%= t("tax.deductions.claim") %>:</span>
       <%= number_to_currency(deductions.claimable_grand_total) %>
     </div>
-    <% if deductions.for_review_group %>
-      <div class="text-sm text-secondary">
-        <span class="font-medium text-warning"><%= t("tax.deductions.pending_review") %>:</span>
-        <%= number_to_currency(deductions.pending_for_review_total.abs) %>
-      </div>
-    <% end %>
+    <%= render "tax/dashboard/pending_review_totals", deductions: deductions %>
   </div>
 </div>
 
@@ -66,12 +61,11 @@
     <% deductions.claim_groups.each do |group| %>
       <%= render "tax/dashboard/deduction_tag_group", group: group, financial_year: financial_year, for_review: false, settings: settings, deductions: deductions %>
     <% end %>
-    <% if deductions.for_review_group %>
-      <div class="border-t border-divider pt-6">
-        <p class="text-xs font-medium text-warning uppercase px-1 mb-3"><%= t("tax.deductions.for_review_heading") %></p>
-        <%= render "tax/dashboard/deduction_tag_group", group: deductions.for_review_group, financial_year: financial_year, for_review: true, settings: settings, deductions: deductions %>
-      </div>
-    <% end %>
+    <%= render "tax/dashboard/for_review_panel",
+          financial_year: financial_year,
+          deductions: deductions,
+          sort: sort,
+          direction: direction %>
     <% if deductions.groups.empty? %>
       <p class="text-sm text-secondary text-center py-8 font-medium"><%= t("tax.deductions.empty") %></p>
     <% end %>

@@ -460,6 +460,7 @@ Rails.application.routes.draw do
     post "deduction_bulk_tags", to: "deduction_bulk_tags#create", as: :deduction_bulk_tags
     post "review_decisions/decline", to: "review_decisions#decline", as: :review_decline
     post "review_decisions/accept", to: "review_decisions#accept", as: :review_accept
+    post "review_decisions/bulk", to: "review_decisions_bulk#create", as: :review_bulk
     get "property_cells", to: "property_cells#show", as: :property_cell
     post "property_cells/link", to: "property_cells#link", as: :property_cell_link
     post "property_cells/link_bulk", to: "property_cells#link_bulk", as: :property_cell_link_bulk

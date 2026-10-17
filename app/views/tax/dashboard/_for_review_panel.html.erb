@@ -1,0 +1,47 @@
+<%# locals: (financial_year:, deductions:, sort:, direction:) %>
+<% group = deductions.for_review_group %>
+<div id="tax-for-review-panel" class="border-t border-divider pt-6">
+  <% if group %>
+    <div
+      data-controller="bulk-select checkbox-toggle"
+      data-bulk-select-singular-label-value="<%= t("tax.deductions.entry") %>"
+      data-bulk-select-plural-label-value="<%= t("tax.deductions.entries") %>"
+      data-bulk-select-selected-label-value="<%= t("transactions.selection_bar.selected") %>"
+      class="relative"
+    >
+      <div data-bulk-select-target="selectionBar" class="flex justify-center hidden mb-4">
+        <%= render "tax/dashboard/review_selection_bar",
+              financial_year: financial_year,
+              deductions: deductions,
+              sort: sort,
+              direction: direction %>
+      </div>
+
+      <p class="text-xs font-medium text-warning uppercase px-1 mb-3"><%= t("tax.deductions.for_review_heading") %></p>
+
+      <div class="bg-container-inset rounded-xl p-1 w-full ring-1 ring-warning/30" data-bulk-select-target="group">
+        <%= render "tax/dashboard/for_review_meta", group: group %>
+
+        <div class="bg-container shadow-border-xs rounded-lg">
+          <% group.entries.each do |entry| %>
+            <div id="<%= dom_id(entry, :tax_review_row) %>" class="border-b border-subdued last:border-0">
+              <div class="relative">
+                <%= render "tax/dashboard/deduction_attachments", entry: entry %>
+                <%= render "entries/entry",
+                      entry: entry,
+                      view_ctx: "tax_deductions_for_review",
+                      tax_deductions_start_year: financial_year.start_year %>
+              </div>
+              <%= render "tax/dashboard/review_actions",
+                    entry: entry,
+                    financial_year: financial_year,
+                    deductions: deductions,
+                    sort: sort,
+                    direction: direction %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

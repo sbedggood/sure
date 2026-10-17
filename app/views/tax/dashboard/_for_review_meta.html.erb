@@ -1,0 +1,20 @@
+<%# locals: (group:) %>
+<div id="tax-for-review-meta" class="py-2 px-4 flex items-center justify-between font-medium text-xs text-secondary">
+  <div class="flex pl-0.5 items-center gap-4">
+    <%= check_box_tag "tax_for_review_selection",
+      class: "checkbox checkbox--light",
+      data: {
+        action: "bulk-select#toggleGroupSelection",
+        checkbox_toggle_target: "selectionEntry"
+      },
+      aria: { label: t("tax.deductions.review_select_all") } %>
+    <p class="uppercase space-x-1.5">
+      <span class="text-warning"><%= group.tag %></span>
+      <span>·</span>
+      <span><%= group.entries.size %></span>
+    </p>
+  </div>
+  <div class="privacy-sensitive text-primary">
+    <%= number_to_currency(group.total_amount) %>
+  </div>
+</div>

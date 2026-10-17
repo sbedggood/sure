@@ -1,13 +1,18 @@
-<%# locals: (entry:, financial_year:, deductions:) %>
+<%# locals: (entry:, financial_year:, deductions:, sort:, direction:) %>
 <div class="flex flex-col gap-2 px-4 py-3 border-t border-subdued bg-surface-inset sm:flex-row sm:items-center sm:justify-between">
   <p class="text-sm font-medium text-primary privacy-sensitive shrink-0">
     <%= format_money(-entry.amount_money) %>
   </p>
 
   <div class="flex flex-wrap items-center justify-end gap-2 min-w-0">
-    <%= form_with url: tax_review_accept_path, method: :post, class: "flex flex-wrap items-center justify-end gap-2 min-w-0" do %>
+    <%= form_with url: tax_review_accept_path,
+          method: :post,
+          data: { turbo_stream: true },
+          class: "flex flex-wrap items-center justify-end gap-2 min-w-0" do %>
       <%= hidden_field_tag :entry_id, entry.id %>
       <%= hidden_field_tag :start_year, financial_year.start_year %>
+      <%= hidden_field_tag :sort, sort %>
+      <%= hidden_field_tag :direction, direction %>
       <%= select_tag :tag_id,
         options_from_collection_for_select(
           deductions.tax_tags_for_select.reject { |t| [ Tax::TagCatalog::FOR_REVIEW_TAG, Tax::TagCatalog::DECLINED_TAG ].include?(t.name) },
@@ -15,16 +20,22 @@
         ),
         include_blank: false,
         class: "min-w-[12rem] max-w-full rounded-md border border-primary bg-container px-2 py-1.5 text-sm",
-        title: t("tax.deductions.accept_to_tag") %>
-      <button type="submit" class="text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1.5 shrink-0 rounded-md hover:bg-container-inset" title="<%= t("tax.deductions.accept") %>">
+        title: t("tax.deductions.accept_to_tag"),
+        aria: { label: t("tax.deductions.accept_to_tag") } %>
+      <button type="submit"
+            class="text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1.5 shrink-0 rounded-md hover:bg-container-inset"
+            title="<%= t("tax.deductions.accept") %>"
+            aria-label="<%= t("tax.deductions.accept") %>">
         <%= icon "check", size: "sm" %>
       </button>
     <% end %>
 
     <%= button_to tax_review_decline_path,
-          params: { entry_id: entry.id, start_year: financial_year.start_year },
+          params: { entry_id: entry.id, start_year: financial_year.start_year, sort: sort, direction: direction },
+          form: { data: { turbo_stream: true } },
           class: "text-secondary hover:text-primary flex items-center justify-center cursor-pointer p-1.5 shrink-0 rounded-md hover:bg-container-inset",
-          title: t("tax.deductions.decline") do %>
+          title: t("tax.deductions.decline"),
+          aria: { label: t("tax.deductions.decline") } do %>
       <%= icon "x", size: "sm", class: "text-subdued hover:text-primary" %>
     <% end %>
   </div>

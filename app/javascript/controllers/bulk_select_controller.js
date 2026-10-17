@@ -20,6 +20,7 @@ export default class extends Controller {
 
   connect() {
     document.addEventListener("turbo:load", this._updateView);
+    this._lastToggledRowIndex = null;
 
     this._updateView();
   }
@@ -68,10 +69,30 @@ export default class extends Controller {
   }
 
   toggleRowSelection(e) {
-    if (e.target.checked) {
-      this._addToSelection(e.target.dataset.id);
+    const checkbox = e.target;
+    const rows = this._enabledRows();
+    const currentIndex = rows.indexOf(checkbox);
+
+    if (e.shiftKey && this._lastToggledRowIndex != null && currentIndex !== -1) {
+      const start = Math.min(this._lastToggledRowIndex, currentIndex);
+      const end = Math.max(this._lastToggledRowIndex, currentIndex);
+      const select = checkbox.checked;
+
+      for (let i = start; i <= end; i++) {
+        if (select) {
+          this._addToSelection(rows[i].dataset.id);
+        } else {
+          this._removeFromSelection(rows[i].dataset.id);
+        }
+      }
+    } else if (checkbox.checked) {
+      this._addToSelection(checkbox.dataset.id);
     } else {
-      this._removeFromSelection(e.target.dataset.id);
+      this._removeFromSelection(checkbox.dataset.id);
+    }
+
+    if (currentIndex !== -1) {
+      this._lastToggledRowIndex = currentIndex;
     }
   }
 
@@ -122,9 +143,11 @@ export default class extends Controller {
   }
 
   _selectAll() {
-    this.selectedIdsValue = this.rowTargets
-      .filter((t) => !t.disabled)
-      .map((t) => t.dataset.id);
+    this.selectedIdsValue = this._enabledRows().map((t) => t.dataset.id);
+  }
+
+  _enabledRows() {
+    return this.rowTargets.filter((t) => !t.disabled);
   }
 
   _updateView = () => {

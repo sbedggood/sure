@@ -1,0 +1,9 @@
+<%# locals: (deductions:) %>
+<% if deductions.for_review_group %>
+  <div id="tax-deductions-pending-review" class="text-sm text-secondary">
+    <span class="font-medium text-warning"><%= t("tax.deductions.pending_review") %>:</span>
+    <%= number_to_currency(deductions.pending_for_review_total.abs) %>
+  </div>
+<% else %>
+  <div id="tax-deductions-pending-review"></div>
+<% end %>

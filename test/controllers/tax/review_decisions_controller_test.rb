@@ -30,6 +30,17 @@ class Tax::ReviewDecisionsControllerTest < ActionDispatch::IntegrationTest
     refute_includes tags, Tax::TagCatalog::FOR_REVIEW_TAG
   end
 
+  test "decline responds with turbo stream row removal" do
+    post tax_review_decline_path,
+      params: { entry_id: @entry.id, start_year: 2023, sort: "date", direction: "desc" },
+      as: :turbo_stream
+
+    assert_response :success
+    assert_includes response.body, %(turbo-stream action="remove")
+    assert_includes response.body, dom_id(@entry, :tax_review_row)
+    assert_includes response.body, "tax-deductions-pending-review"
+  end
+
   test "accept moves to chosen tag" do
     post tax_review_accept_path, params: { entry_id: @entry.id, start_year: 2023, tag_id: @phone.id }
 

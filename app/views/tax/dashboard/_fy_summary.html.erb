@@ -15,14 +15,6 @@
       </p>
     </div>
 
-    <div class="bg-container rounded-xl shadow-border-xs p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <%= icon("clock", size: "sm") %>
-        <span class="text-sm text-secondary"><%= t("tax.summary.pending_review") %></span>
-      </div>
-      <p class="text-xl font-semibold text-primary privacy-sensitive">
-        <%= number_to_currency(deductions.pending_for_review_total.abs) %>
-      </p>
-    </div>
+    <%= render "tax/dashboard/summary_pending_review", deductions: deductions %>
   </div>
 </div>
