@@ -15,6 +15,29 @@ module Tax
     end
 
     def results(query:, fy_filter:, account_id: nil)
+      entries = fetch_results(query: query, fy_filter: fy_filter, account_id: account_id)
+      rank_search_results(entries, query)
+    end
+
+    def suggestions(linked_entries:)
+      reference_entries = reference_entries_for_matching(linked_entries)
+      payee_profile = PropertyCellPayeeProfile.from_entries(reference_entries)
+      return [] if payee_profile.empty?
+
+      range = (@month - 1.month).beginning_of_month..(@month + 1.month).end_of_month
+      scope = base_scope.where(date: range)
+      candidates = scope.order(date: :desc).limit(100).to_a
+      candidates.reject! { |entry| linked_to_cell?(entry) || already_tagged?(entry) || exclude_from_suggestions?(entry) }
+      matcher = PropertyCellMatcher.new(
+        linked_entries: linked_entries,
+        month: @month,
+        reference_entries: reference_entries,
+        payee_profile: payee_profile
+      )
+      matcher.suggestion_candidates(candidates).first(8).map(&:entry)
+    end
+
+    def fetch_results(query:, fy_filter:, account_id: nil)
       scope = base_scope
       scope = apply_fy_filter(scope, fy_filter)
       scope = apply_account_filter(scope, account_id)
@@ -24,19 +47,10 @@ module Tax
         .first(50)
     end
 
-    def suggestions(linked_entries:)
-      return [] if reference_entries_for_matching(linked_entries).empty?
-
-      range = (@month - 1.month).beginning_of_month..(@month + 1.month).end_of_month
-      scope = base_scope.where(date: range)
-      candidates = scope.order(date: :desc).limit(100).to_a
-      candidates.reject! { |entry| linked_to_cell?(entry) || already_tagged?(entry) || exclude_from_suggestions?(entry) }
-      matcher = PropertyCellMatcher.new(
-        linked_entries: linked_entries,
-        month: @month,
-        reference_entries: reference_entries_for_matching(linked_entries)
-      )
-      matcher.suggestion_candidates(candidates).first(8).map(&:entry)
+    def rank_search_results(entries, query)
+      reference_entries = reference_entries_for_matching([])
+      payee_profile = PropertyCellPayeeProfile.from_entries(reference_entries)
+      PropertyCellSearchRanker.new(payee_profile: payee_profile, query: query).rank(entries)
     end
 
     def reference_entries_for_matching(linked_entries)
