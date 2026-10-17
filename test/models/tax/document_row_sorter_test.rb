@@ -23,6 +23,17 @@ class Tax::DocumentRowSorterTest < ActiveSupport::TestCase
     assert_equal [ alpha.id, beta.id ], sorted.map(&:id)
   end
 
+  test "sorts by amount with missing amounts last in both directions" do
+    with_amount = build_row(filename: "paid.pdf", entry_amount: BigDecimal("50"))
+    missing = build_row(filename: "upload.pdf", entry_amount: nil)
+
+    asc = Tax::DocumentRowSorter.sort([ missing, with_amount ], sort: "amount", direction: "asc")
+    desc = Tax::DocumentRowSorter.sort([ missing, with_amount ], sort: "amount", direction: "desc")
+
+    assert_equal [ with_amount.id, missing.id ], asc.map(&:id)
+    assert_equal [ with_amount.id, missing.id ], desc.map(&:id)
+  end
+
   test "rejects unknown sort columns" do
     row = build_row(filename: "a.pdf", entry_date: Date.new(2023, 1, 1))
 
@@ -33,7 +44,7 @@ class Tax::DocumentRowSorterTest < ActiveSupport::TestCase
 
   private
 
-    def build_row(filename:, entry_date: nil, entry_name: nil)
+    def build_row(filename:, entry_date: nil, entry_name: nil, entry_amount: nil)
       Row.new(
         id: "row_#{filename}",
         source: :upload,
@@ -52,7 +63,7 @@ class Tax::DocumentRowSorterTest < ActiveSupport::TestCase
         preview_url: "/preview",
         download_url: "/download",
         entry_name: entry_name,
-        entry_amount: nil,
+        entry_amount: entry_amount,
         account_name: nil,
         entry_date: entry_date,
         merchant_logo_url: nil

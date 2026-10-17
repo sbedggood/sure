@@ -6,8 +6,17 @@ module Tax
 
     def self.sort(rows, sort:, direction:)
       sort, direction = SortParams.parse(sort: sort, direction: direction, allowed: COLUMNS)
+      return sort_by_amount(rows, direction) if sort == "amount"
+
       sorted = rows.sort_by { |row| [ sort_key(row, sort), row.filename.to_s.downcase ] }
       direction == "asc" ? sorted : sorted.reverse
+    end
+
+    def self.sort_by_amount(rows, direction)
+      with_amount, without_amount = rows.partition { |row| row.entry_amount.present? }
+      sorted = with_amount.sort_by { |row| row.entry_amount.to_d }
+      sorted.reverse! if direction == "desc"
+      sorted + without_amount
     end
 
     def self.sort_key(row, sort)

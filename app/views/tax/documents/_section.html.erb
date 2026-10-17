@@ -16,7 +16,9 @@
 <% sort_base_params = if sort_path == :tax_documents_path
      { doc_fy: fy_filter, doc_type: doc_type }.compact
    else
-     { start_year: financial_year.start_year, section: "documents", doc_scope: doc_scope, doc_type: doc_type }
+     dashboard_sort_params = { section: "documents", doc_scope: doc_scope, doc_type: doc_type }
+     dashboard_sort_params[:start_year] = financial_year.start_year if financial_year.present?
+     dashboard_sort_params
    end %>
 <% filtered_rows = if doc_type.present? && doc_type != "all"
      rows.select { |r| r.document_type == doc_type }

@@ -27,17 +27,45 @@ class Merchant::LogoCacherTest < ActiveSupport::TestCase
     assert_equal :skipped_attached, Merchant::LogoCacher.cache!(merchant).status
   end
 
+  test "follows redirects to image responses" do
+    merchant = FamilyMerchant.create!(family: @family, name: "Redirect", website_url: "https://redirect.example")
+    brandfetch_url = Setting.transform_brand_fetch_url(merchant.logo_url)
+    final_url = "https://cdn.brandfetch.io/redirect.example/icon/final.webp"
+
+    stub_request(:get, brandfetch_url)
+      .to_return(status: 302, headers: { "Location" => final_url })
+    stub_request(:get, final_url)
+      .to_return(status: 200, body: @png, headers: { "Content-Type" => "image/webp" })
+
+    result = Merchant::LogoCacher.cache!(merchant)
+
+    assert_equal :cached, result.status
+    assert merchant.reload.logo.attached?
+  end
+
+  test "rejects redirects to documentation pages" do
+    merchant = FamilyMerchant.create!(family: @family, name: "Docs", website_url: "https://docs.example")
+    brandfetch_url = Setting.transform_brand_fetch_url(merchant.logo_url)
+
+    stub_request(:get, brandfetch_url)
+      .to_return(status: 302, headers: { "Location" => "https://docs.brandfetch.io/" })
+    stub_request(:get, "https://logos.ntropy.com/docs.example").to_return(status: 404, body: "")
+
+    result = Merchant::LogoCacher.cache!(merchant)
+
+    assert_equal :failed, result.status
+  end
+
   test "falls back to ntropy when brandfetch fails" do
     merchant = FamilyMerchant.create!(family: @family, name: "Acme", website_url: "https://acme.com")
     brandfetch_url = Setting.transform_brand_fetch_url(merchant.logo_url)
     ntropy_url = "https://logos.ntropy.com/acme.com"
 
     stub_request(:get, brandfetch_url).to_return(status: 404, body: "missing")
-    stub_request(:get, ntropy_url).to_return(
-      status: 200,
-      body: @png,
-      headers: { "Content-Type" => "image/png" }
-    )
+    stub_request(:get, ntropy_url)
+      .to_return(status: 303, headers: { "Location" => "https://cdn.example.com/acme.png" })
+    stub_request(:get, "https://cdn.example.com/acme.png")
+      .to_return(status: 200, body: @png, headers: { "Content-Type" => "image/png" })
 
     result = Merchant::LogoCacher.cache!(merchant)
 
