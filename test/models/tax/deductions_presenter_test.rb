@@ -50,6 +50,24 @@ class Tax::DeductionsPresenterTest < ActiveSupport::TestCase
     refute_includes tags, "Tax: Property - Electricity"
   end
 
+  test "payslip tagged income is excluded from deduction groups and claim" do
+    payslip = @family.tags.create!(name: Tax::TagCatalog::PAYSLIP_TAG, color: "#6471eb")
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 4),
+      amount: -13_041,
+      currency: "AUD",
+      name: "Salary",
+      tags: [ payslip ]
+    )
+
+    presenter = Tax::DeductionsPresenter.new(family: @family, start_year: @start_year)
+    tags = presenter.groups.map(&:tag)
+
+    refute_includes tags, Tax::TagCatalog::PAYSLIP_TAG
+    assert_equal BigDecimal("40"), presenter.claimable_grand_total
+  end
+
   test "for review is excluded from claim groups" do
     presenter = Tax::DeductionsPresenter.new(family: @family, start_year: @start_year)
 

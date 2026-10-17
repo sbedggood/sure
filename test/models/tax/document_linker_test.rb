@@ -38,6 +38,16 @@ class Tax::DocumentLinkerTest < ActiveSupport::TestCase
     assert Tax::DocumentLinker.standalone_origin?(attachment)
   end
 
+  test "linking standalone document does not change catalog row count" do
+    catalog = Tax::DocumentCatalog.new(family: @family)
+    before_count = catalog.all_rows.size
+
+    @linker.link_to_entry!(tax_document: @document, entry: @entry)
+
+    after_count = Tax::DocumentCatalog.new(family: @family).all_rows.size
+    assert_equal before_count, after_count
+  end
+
   test "restore_standalone recreates tax document and removes attachment" do
     attachment = @linker.link_to_entry!(tax_document: @document, entry: @entry)
 

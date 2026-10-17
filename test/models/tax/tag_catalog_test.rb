@@ -21,6 +21,11 @@ class Tax::TagCatalogTest < ActiveSupport::TestCase
     assert Tax::TagCatalog.deduction_group_tag?("Tax: For Review")
   end
 
+  test "payslip tag is document only and not a deduction tag" do
+    assert Tax::TagCatalog.document_only_tag?(Tax::TagCatalog::PAYSLIP_TAG)
+    refute Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::PAYSLIP_TAG)
+  end
+
   test "declined tag is excluded from deductions" do
     refute Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::DECLINED_TAG)
     assert Tax::TagCatalog.excluded_from_tax_workflow?(Tax::TagCatalog::DECLINED_TAG)

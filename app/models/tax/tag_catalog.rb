@@ -25,6 +25,10 @@ module Tax
     FOR_REVIEW_TAG = "Tax: For Review"
     DECLINED_TAG = "Tax: Declined"
     PAYSLIP_TAG = DocumentType::PAYSLIP_TAG
+    # Tags used for tax documents / income evidence — not work deductions.
+    DOCUMENT_ONLY_TAGS = [
+      PAYSLIP_TAG
+    ].freeze
     DONATIONS_TAG = "Tax: Donations"
     AGENT_FEES_TAG = "Tax: Agent Fees"
     PROPERTY_PREFIX = "Tax: Property - "
@@ -55,12 +59,17 @@ module Tax
       tag_name.to_s == DECLINED_TAG
     end
 
+    def document_only_tag?(tag_name)
+      DOCUMENT_ONLY_TAGS.include?(tag_name.to_s)
+    end
+
     def deduction_tag?(tag_name)
       tag_name.to_s.start_with?(PREFIX) &&
         !property_prefixed?(tag_name) &&
         !rental_income?(tag_name) &&
         !for_review?(tag_name) &&
-        !declined?(tag_name)
+        !declined?(tag_name) &&
+        !document_only_tag?(tag_name)
     end
 
     def deduction_group_tag?(tag_name)

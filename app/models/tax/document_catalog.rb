@@ -58,7 +58,7 @@ module Tax
       end
 
       def attachment_rows
-        tax_entries_with_attachments.flat_map do |entry|
+        tax_entries_with_attachments.uniq(&:id).flat_map do |entry|
           fy = financial_year_for_date(entry.date)
           tag_names = entry.transaction.tags.select { |t| t.name.start_with?("Tax:") }.map(&:name)
           document_type = DocumentType.infer_from_tag_names(tag_names)

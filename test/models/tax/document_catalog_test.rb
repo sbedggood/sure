@@ -64,6 +64,15 @@ class Tax::DocumentCatalogTest < ActiveSupport::TestCase
     assert_equal "payslip", row.document_type
   end
 
+  test "attachment rows are not duplicated when entry has multiple tax tags" do
+    payslip_tag = @family.tags.create!(name: Tax::DocumentType::PAYSLIP_TAG, color: "#6471eb")
+    @entry.transaction.update!(tag_ids: (@entry.transaction.tag_ids + [ payslip_tag.id ]).uniq)
+
+    rows = Tax::DocumentCatalog.new(family: @family).all_rows.select { |r| r.entry_id == @entry.id }
+    assert_equal 1, rows.size
+    assert_equal "attachment_#{@entry.transaction.attachments.first.id}", rows.first.id
+  end
+
   test "standalone uploads exclude linked legacy rows" do
     linked = @family.tax_documents.new(
       document_type: "payslip",
