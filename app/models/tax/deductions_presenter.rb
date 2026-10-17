@@ -6,11 +6,12 @@ module Tax
 
     attr_reader :financial_year, :settings
 
-    def initialize(family:, start_year:)
+    def initialize(family:, start_year:, sort: nil, direction: nil)
       @family = family
       @financial_year = FinancialYear.new(start_year)
       @settings = TaxFySetting.find_or_initialize_for!(family: family, start_year: start_year)
       @settings.save! if @settings.new_record?
+      @sort, @direction = SortParams.parse(sort: sort, direction: direction, allowed: EntrySorter::COLUMNS)
     end
 
     def groups
@@ -56,7 +57,7 @@ module Tax
         ordered_names = grouped.keys.sort_by { |name| for_review_name?(name) ? "zzz" : name }
 
         ordered_names.map do |tag_name|
-          entries = grouped[tag_name].uniq
+          entries = EntrySorter.sort(grouped[tag_name].uniq, sort: @sort, direction: @direction)
           total = entries.sum { |e| e.amount }
           for_review = TagCatalog.for_review?(tag_name)
           percent = settings.business_use_percent_for(tag_name)

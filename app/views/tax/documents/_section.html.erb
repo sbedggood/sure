@@ -8,8 +8,16 @@
       show_scope_filter: true,
       show_fy_filter: false,
       fy_filter: nil,
-      fy_options: []
+      fy_options: [],
+      sort: Tax::SortParams::DEFAULT_SORT,
+      direction: Tax::SortParams::DEFAULT_DIRECTION,
+      sort_path: :tax_dashboard_path
     ) %>
+<% sort_base_params = if sort_path == :tax_documents_path
+     { doc_fy: fy_filter, doc_type: doc_type }.compact
+   else
+     { start_year: financial_year.start_year, section: "documents", doc_scope: doc_scope, doc_type: doc_type }
+   end %>
 <% filtered_rows = if doc_type.present? && doc_type != "all"
      rows.select { |r| r.document_type == doc_type }
    else
@@ -40,12 +48,12 @@
           <% control.with_segment(
                t("tax.documents.scope_fy", fy: financial_year.label),
                active: doc_scope == "fy",
-               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "fy", doc_type: doc_type)
+               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "fy", doc_type: doc_type, sort: sort, direction: direction)
              ) %>
           <% control.with_segment(
                t("tax.documents.scope_all"),
                active: doc_scope == "all",
-               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "all", doc_type: doc_type)
+               href: tax_dashboard_path(start_year: financial_year.start_year, section: "documents", doc_scope: "all", doc_type: doc_type, sort: sort, direction: direction)
              ) %>
         <% end %>
       <% end %>
@@ -53,6 +61,8 @@
       <% if show_fy_filter %>
         <%= form_with url: tax_documents_path, method: :get, data: { turbo_frame: "_top" }, class: "flex flex-col gap-1 min-w-56" do %>
           <%= hidden_field_tag :doc_type, doc_type %>
+          <%= hidden_field_tag :sort, sort %>
+          <%= hidden_field_tag :direction, direction %>
           <label class="text-sm text-secondary font-medium" for="doc_fy"><%= t("tax.documents_all.filter_fy") %></label>
           <%= select_tag :doc_fy,
             options_for_select([[t("tax.documents_all.all_fys"), ""]] + fy_options, fy_filter),
@@ -63,8 +73,7 @@
       <% end %>
 
       <%= render DS::SegmentedControl.new(aria_label: t("tax.documents.type_aria"), class: "bg-surface-inset overflow-x-auto no-scrollbar") do |control| %>
-        <% type_base = show_fy_filter ? { doc_fy: fy_filter } : { start_year: financial_year.start_year, section: "documents", doc_scope: doc_scope } %>
-        <% type_path = ->(type) { show_fy_filter ? tax_documents_path(**type_base, doc_type: type) : tax_dashboard_path(**type_base, doc_type: type) } %>
+        <% type_path = ->(type) { send(sort_path, **sort_base_params, doc_type: type) } %>
         <% control.with_segment(t("tax.documents.type_all"), active: doc_type == "all", href: type_path.call("all"), class: "whitespace-nowrap px-3") %>
         <% TaxDocument::DOCUMENT_TYPES.each do |type| %>
           <% control.with_segment(
@@ -82,5 +91,9 @@
         rows: filtered_rows,
         show_transaction_columns: true,
         upload_start_year: upload_start_year,
-        return_to: return_to %>
+        return_to: return_to,
+        sort: sort,
+        direction: direction,
+        sort_path: sort_path,
+        sort_base_params: sort_base_params %>
 </div>

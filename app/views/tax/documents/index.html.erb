@@ -23,6 +23,8 @@
 
         <%= form_with url: tax_documents_path, method: :get, data: { turbo_frame: "_top" }, class: "flex flex-col gap-1 min-w-56 max-w-xs" do %>
           <%= hidden_field_tag :doc_type, @doc_type %>
+          <%= hidden_field_tag :sort, @sort %>
+          <%= hidden_field_tag :direction, @direction %>
           <label class="text-sm text-secondary font-medium" for="doc_fy_header"><%= t("tax.documents_all.filter_fy") %></label>
           <%= select_tag :doc_fy,
             options_for_select([[t("tax.documents_all.all_fys"), ""]] + @fy_options, @fy_filter),
@@ -38,7 +40,7 @@
             variant: "primary",
             href: new_tax_document_path(
               start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
-              return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type)
+              return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type, sort: @sort, direction: @direction)
             ),
             frame: :modal,
             class: "shrink-0 self-start sm:self-center"
@@ -53,9 +55,12 @@
         doc_scope: "all",
         doc_type: @doc_type,
         upload_start_year: @fy_filter.presence || Tax::FinancialYear.current_start_year,
-        return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type),
+        return_to: tax_documents_path(doc_fy: @fy_filter, doc_type: @doc_type, sort: @sort, direction: @direction),
         show_scope_filter: false,
         show_fy_filter: false,
         fy_filter: @fy_filter,
-        fy_options: @fy_options %>
+        fy_options: @fy_options,
+        sort: @sort,
+        direction: @direction,
+        sort_path: :tax_documents_path %>
 </div>

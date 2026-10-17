@@ -66,8 +66,8 @@
   <% when "property" %>
     <%= render "tax/dashboard/property", financial_year: @financial_year, settings: @settings, summary: @summary, property_grid: @property_grid %>
   <% when "deductions" %>
-    <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, deductions: @deductions %>
+    <%= render "tax/dashboard/deductions", financial_year: @financial_year, settings: @settings, deductions: @deductions, sort: @deduction_sort, direction: @deduction_direction %>
   <% when "documents" %>
-    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents, doc_scope: @doc_scope, doc_type: @doc_type %>
+    <%= render "tax/dashboard/documents", financial_year: @financial_year, document_rows: @documents, doc_scope: @doc_scope, doc_type: @doc_type, sort: @sort, direction: @direction %>
   <% end %>
 </div>

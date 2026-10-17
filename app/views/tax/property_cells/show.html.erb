@@ -84,6 +84,9 @@
                 }
               ) %>
 
+          <%= hidden_field_tag :sort, @sort %>
+          <%= hidden_field_tag :direction, @direction %>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <%= render DS::Select.new(
                   form: form,
@@ -113,7 +116,9 @@
               financial_year: @financial_year,
               candidate_query: @candidate_query,
               fy_filter: @fy_filter,
-              account_id: @account_id %>
+              account_id: @account_id,
+              sort: @sort,
+              direction: @direction %>
       </div>
 
       <% if @suggested_entries.any? %>

@@ -1,4 +1,4 @@
-<%# locals: (rows:, show_transaction_columns: true, upload_start_year:, return_to:) %>
+<%# locals: (rows:, show_transaction_columns: true, upload_start_year:, return_to:, sort:, direction:, sort_path:, sort_base_params:) %>
 <div class="bg-container rounded-lg shadow-border-xs overflow-x-auto">
   <% if rows.any? %>
     <table class="w-full">
@@ -6,13 +6,25 @@
         <tr class="text-xs uppercase font-medium text-secondary border-b border-divider">
           <% if show_transaction_columns %>
             <th class="px-3 py-3 text-left min-w-12"></th>
-            <th class="px-3 py-3 text-left min-w-44"><%= t("tax.documents_all.merchant") %></th>
-            <th class="px-3 py-3 text-right min-w-24"><%= t("tax.documents_all.amount") %></th>
-            <th class="px-3 py-3 text-left min-w-28"><%= t("tax.documents_all.date") %></th>
+            <th class="px-3 py-3 text-left min-w-44">
+              <%= tax_sort_link t("tax.documents_all.merchant"), column: "merchant", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path %>
+            </th>
+            <th class="px-3 py-3 text-right min-w-24">
+              <%= tax_sort_link t("tax.documents_all.amount"), column: "amount", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path, align: :right %>
+            </th>
+            <th class="px-3 py-3 text-left min-w-28">
+              <%= tax_sort_link t("tax.documents_all.date"), column: "date", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path %>
+            </th>
           <% end %>
-          <th class="px-3 py-3 text-left min-w-40"><%= t("tax.documents_all.file") %></th>
-          <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.period") %></th>
-          <th class="px-3 py-3 text-left min-w-24"><%= t("tax.documents_all.type") %></th>
+          <th class="px-3 py-3 text-left min-w-40">
+            <%= tax_sort_link t("tax.documents_all.file"), column: "file", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path %>
+          </th>
+          <th class="px-3 py-3 text-left min-w-24">
+            <%= tax_sort_link t("tax.documents_all.period"), column: "period", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path %>
+          </th>
+          <th class="px-3 py-3 text-left min-w-24">
+            <%= tax_sort_link t("tax.documents_all.type"), column: "type", sort: sort, direction: direction, base_params: sort_base_params, path: sort_path %>
+          </th>
           <th class="px-3 py-3 text-right min-w-32"><%= t("tax.documents_all.actions") %></th>
         </tr>
       </thead>

@@ -3,7 +3,6 @@
 module Tax
   class DashboardController < ApplicationController
     include Tax::StartYearFromParams
-
     before_action :set_financial_year
     before_action :set_settings
     before_action :set_breadcrumbs
@@ -13,12 +12,28 @@ module Tax
       @summary = Tax::Summary.new(family: Current.family, start_year: @financial_year.start_year)
       @weeks = build_calendar_weeks
       @fy_options = financial_year_options
-      @deductions = Tax::DeductionsPresenter.new(family: Current.family, start_year: @financial_year.start_year)
       @property_grid = Tax::PropertyGrid.new(family: Current.family, start_year: @financial_year.start_year)
       @document_catalog = Tax::DocumentCatalog.new(family: Current.family)
       @doc_scope = params[:doc_scope].presence || "fy"
       @doc_type = params[:doc_type].presence || "all"
       @documents = @doc_scope == "all" ? @document_catalog.all_rows : @document_catalog.rows_for_fy(@financial_year.start_year)
+      @sort, @direction = Tax::SortParams.parse(
+        sort: params[:sort],
+        direction: params[:direction],
+        allowed: DocumentRowSorter::COLUMNS
+      )
+      @documents = DocumentRowSorter.sort(@documents, sort: @sort, direction: @direction)
+      @deduction_sort, @deduction_direction = Tax::SortParams.parse(
+        sort: params[:sort],
+        direction: params[:direction],
+        allowed: EntrySorter::COLUMNS
+      )
+      @deductions = Tax::DeductionsPresenter.new(
+        family: Current.family,
+        start_year: @financial_year.start_year,
+        sort: @deduction_sort,
+        direction: @deduction_direction
+      )
       @section = "calendar" unless valid_section?(@section)
     end
 

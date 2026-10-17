@@ -16,6 +16,12 @@ module Tax
       else
         @document_catalog.all_rows
       end
+      @sort, @direction = Tax::SortParams.parse(
+        sort: params[:sort],
+        direction: params[:direction],
+        allowed: Tax::DocumentRowSorter::COLUMNS
+      )
+      @rows = Tax::DocumentRowSorter.sort(@rows, sort: @sort, direction: @direction)
       @fy_options = financial_year_options
     end
 

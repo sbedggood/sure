@@ -29,14 +29,7 @@ module Tax
       transaction = entry.transaction
       transaction.update!(tag_ids: transaction.tag_ids - [ tag.id ])
 
-      redirect_to tax_property_cell_path(
-        tag_name: params[:tag_name],
-        month: params[:month],
-        start_year: tax_start_year_from_params,
-        fy: params[:fy],
-        q: params[:q],
-        account_id: params[:account_id]
-      ), notice: t("tax.property.unlinked")
+      redirect_to tax_property_cell_path(property_cell_redirect_params), notice: t("tax.property.unlinked")
     end
 
     private
@@ -69,11 +62,17 @@ module Tax
       end
 
       def load_search_results
-        @search_results = @search.results(
+        @sort, @direction = Tax::SortParams.parse(
+          sort: params[:sort],
+          direction: params[:direction],
+          allowed: EntrySorter::COLUMNS
+        )
+        results = @search.results(
           query: @candidate_query,
           fy_filter: @fy_filter,
           account_id: @account_id
         )
+        @search_results = EntrySorter.sort(results, sort: @sort, direction: @direction)
       end
 
       def link_entries(entry_ids)
@@ -86,14 +85,20 @@ module Tax
       end
 
       def redirect_after_link
-        redirect_to tax_property_cell_path(
+        redirect_to tax_property_cell_path(property_cell_redirect_params), notice: t("tax.property.linked")
+      end
+
+      def property_cell_redirect_params
+        {
           tag_name: params[:tag_name],
           month: params[:month],
           start_year: tax_start_year_from_params,
           fy: params[:fy],
           q: params[:q],
-          account_id: params[:account_id]
-        ), notice: t("tax.property.linked")
+          account_id: params[:account_id],
+          sort: params[:sort],
+          direction: params[:direction]
+        }
       end
 
       def financial_year_options
