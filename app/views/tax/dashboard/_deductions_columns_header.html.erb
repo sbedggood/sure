@@ -1,0 +1,14 @@
+<%# locals: (sort:, direction:, deduction_sort_base:) %>
+<div class="grid-cols-12 bg-container-inset rounded-xl px-5 py-3 text-xs uppercase font-medium text-secondary items-center mb-4 hidden lg:grid">
+  <div class="pl-0.5 col-span-2">
+    <%= tax_sort_link t("tax.documents_all.date"), column: "date", sort: sort, direction: direction, base_params: deduction_sort_base, path: :tax_dashboard_path %>
+  </div>
+  <div class="col-span-3">
+    <%= tax_sort_link t("tax.deductions.columns.name"), column: "name", sort: sort, direction: direction, base_params: deduction_sort_base, path: :tax_dashboard_path %>
+  </div>
+  <div class="col-span-3 text-center"><%= t("tax.deductions.columns.category") %></div>
+  <div class="col-span-2 text-center"><%= t("tax.deductions.columns.tags") %></div>
+  <div class="col-span-2 text-right">
+    <%= tax_sort_link t("tax.deductions.columns.amount"), column: "amount", sort: sort, direction: direction, base_params: deduction_sort_base, path: :tax_dashboard_path, align: :right %>
+  </div>
+</div>

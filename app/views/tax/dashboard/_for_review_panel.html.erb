@@ -1,5 +1,6 @@
 <%# locals: (financial_year:, deductions:, sort:, direction:) %>
 <% group = deductions.for_review_group %>
+<% deduction_sort_base = { start_year: financial_year.start_year, section: "deductions" } %>
 <div id="tax-for-review-panel" class="border-t border-divider pt-6">
   <% if group %>
     <div
@@ -21,6 +22,11 @@
 
       <div class="bg-container-inset rounded-xl p-1 w-full ring-1 ring-warning/30" data-bulk-select-target="group">
         <%= render "tax/dashboard/for_review_meta", group: group %>
+
+        <%= render "tax/dashboard/deductions_columns_header",
+              sort: sort,
+              direction: direction,
+              deduction_sort_base: deduction_sort_base %>
 
         <div class="bg-container shadow-border-xs rounded-lg">
           <% group.entries.each do |entry| %>
