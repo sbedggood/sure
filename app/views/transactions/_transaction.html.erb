@@ -15,16 +15,6 @@
          data-controller="clickable-row"
          data-action="click->clickable-row#open">
 
-      <% if tax_deductions_view %>
-        <div class="hidden lg:flex col-span-2 items-center text-secondary text-sm pr-2 shrink-0">
-          <% if entry.date %>
-            <time datetime="<%= entry.date.iso8601 %>"><%= format_date(entry.date, :short_with_year) %></time>
-          <% else %>
-            <span>—</span>
-          <% end %>
-        </div>
-      <% end %>
-
       <div class="pr-4 lg:pr-10 flex items-center gap-3 lg:gap-4 col-span-5 <%= "lg:col-span-3" if tax_deductions_view %> min-w-0 max-md:flex-1">
         <%= check_box_tag dom_id(entry, "selection"),
             disabled: transaction.transfer.present?,
@@ -212,6 +202,16 @@
           <% end %>
         </div>
       </div>
+
+      <% if tax_deductions_view %>
+        <div class="hidden lg:flex col-span-2 items-center text-secondary text-sm pr-2 shrink-0">
+          <% if entry.date %>
+            <time datetime="<%= entry.date.iso8601 %>"><%= format_date(entry.date, :short_with_year) %></time>
+          <% else %>
+            <span>—</span>
+          <% end %>
+        </div>
+      <% end %>
 
       <div class="hidden md:flex min-w-0 items-center gap-1 col-span-3 pr-2">
         <% if entry.account.supports_trades? && !transaction.transfer? %>
