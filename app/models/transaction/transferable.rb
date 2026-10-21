@@ -18,7 +18,11 @@ module Transaction::Transferable
   end
 
   def transfer
-    transfer_as_inflow || transfer_as_outflow
+    if association(:transfer_as_inflow).loaded? && association(:transfer_as_outflow).loaded?
+      association(:transfer_as_inflow).target || association(:transfer_as_outflow).target
+    else
+      transfer_as_inflow || transfer_as_outflow
+    end
   end
 
   def transfer_match_candidates(
