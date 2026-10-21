@@ -2,6 +2,13 @@
 
 module Tax
   class DeductionsPresenter
+    DEDUCTION_ENTRY_INCLUDES = [
+      :account,
+      :parent_entry,
+      entryable: [ :tags, :category, :merchant, { attachments_attachments: :blob } ],
+      parent_entry: { entryable: { attachments_attachments: :blob } }
+    ].freeze
+
     Group = Data.define(:tag, :tag_record, :entries, :total_amount, :claim_amount, :for_review)
 
     attr_reader :financial_year, :settings
@@ -42,12 +49,12 @@ module Tax
 
       def build_groups
         grouped = Hash.new { |h, k| h[k] = [] }
-        tax_tag_names = @family.tags.where("name LIKE ?", "Tax:%").pluck(:name)
+        tax_tags_by_name = @family.tags.where("name LIKE ?", "Tax:%").index_by(&:name)
 
         entries_in_fy.each do |entry|
           next if entry_declined?(entry)
 
-          entry.transaction.tags.each do |tag|
+          entry.entryable.tags.each do |tag|
             next unless TagCatalog.deduction_group_tag?(tag.name)
 
             grouped[tag.name] << entry
@@ -64,7 +71,7 @@ module Tax
           claim = for_review ? BigDecimal("0") : (total * percent / 100)
           Group.new(
             tag: tag_name,
-            tag_record: @family.tags.find_by(name: tag_name),
+            tag_record: tax_tags_by_name[tag_name],
             entries: entries,
             total_amount: total,
             claim_amount: claim,
@@ -80,12 +87,7 @@ module Tax
           .joins("INNER JOIN tags ON tags.id = taggings.tag_id")
           .where(date: financial_year.range)
           .where("tags.name LIKE ?", "Tax:%")
-          .includes(
-            :account,
-            :parent_entry,
-            entryable: [ :tags, :category, :merchant, { attachments_attachments: :blob } ],
-            parent_entry: { entryable: { attachments_attachments: :blob } }
-          )
+          .includes(DEDUCTION_ENTRY_INCLUDES)
           .distinct
           .order(date: :desc)
       end
@@ -101,7 +103,7 @@ module Tax
       end
 
       def entry_declined?(entry)
-        entry.transaction.tags.any? { |t| TagCatalog.declined?(t.name) }
+        entry.entryable.tags.any? { |t| TagCatalog.declined?(t.name) }
       end
   end
 end

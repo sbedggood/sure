@@ -1,5 +1,5 @@
 <%# locals: (entry:) %>
-<% display_attachments = entry.transaction.display_attachments %>
+<% display_attachments = entry.entryable.display_attachments %>
 <% return if display_attachments.empty? %>
 
 <div class="absolute right-32 top-4 z-10 hidden lg:block">

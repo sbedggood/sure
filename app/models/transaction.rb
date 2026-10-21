@@ -533,29 +533,38 @@ class Transaction < ApplicationRecord
 
   # Split children keep receipts on the excluded parent transaction.
   def split_parent_transaction
-    return unless entry&.split_child?
+    child_entry = associated_entry
+    return unless child_entry&.split_child?
 
-    parent = entry.parent_entry&.entryable
+    parent_entry = child_entry.parent_entry
+    return unless parent_entry
+
+    parent = parent_entry.entryable
     parent.is_a?(Transaction) ? parent : nil
   end
 
   def inherited_attachments
-    split_parent_transaction&.attachments || []
+    parent_tx = split_parent_transaction
+    return [] unless parent_tx
+
+    loaded_attachment_records(parent_tx)
   end
 
   def display_attachments
     parent_tx = split_parent_transaction
-    own = attachments.map { |attachment| DisplayAttachment.new(attachment:, from_parent: false, owner_transaction: self) }
+    own = loaded_attachment_records(self).map do |attachment|
+      DisplayAttachment.new(attachment:, from_parent: false, owner_transaction: self)
+    end
     return own unless parent_tx
 
-    inherited = parent_tx.attachments.map do |attachment|
+    inherited = loaded_attachment_records(parent_tx).map do |attachment|
       DisplayAttachment.new(attachment:, from_parent: true, owner_transaction: parent_tx)
     end
     own + inherited
   end
 
   def display_attachments?
-    attachments.attached? || inherited_attachments.any?
+    attachment_records_present?(self) || attachment_records_present?(split_parent_transaction)
   end
 
   # Find potential posted transactions that might be duplicates of this pending transaction
@@ -579,6 +588,28 @@ class Transaction < ApplicationRecord
   end
 
   private
+
+    def associated_entry
+      association(:entry).reader
+    end
+
+    def loaded_attachment_records(record)
+      if record.association(:attachments_attachments).loaded?
+        record.attachments_attachments
+      else
+        record.attachments.to_a
+      end
+    end
+
+    def attachment_records_present?(record)
+      return false unless record
+
+      if record.association(:attachments_attachments).loaded?
+        record.attachments_attachments.any?
+      else
+        record.attachments.attached?
+      end
+    end
 
     def validate_attachments
       # Check attachment count limit

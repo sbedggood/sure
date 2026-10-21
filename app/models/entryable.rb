@@ -10,7 +10,7 @@ module Entryable
   included do
     include Enrichable
 
-    has_one :entry, as: :entryable, touch: true, dependent: :destroy
+    has_one :entry, as: :entryable, touch: true, dependent: :destroy, inverse_of: :entryable
 
     scope :with_entry, -> { joins(:entry) }
 

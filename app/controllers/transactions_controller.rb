@@ -4,6 +4,7 @@ class TransactionsController < ApplicationController
 
   before_action :set_entry_for_unlock, only: :unlock
   before_action :set_entry_for_tags, only: :update_tags
+  before_action :preload_transaction_drawer_associations, only: :show
   before_action :store_params!, only: :index
 
   helper_method :new_transaction_idempotency_key
@@ -690,6 +691,15 @@ class TransactionsController < ApplicationController
 
     def set_entry_for_tags
       set_entry
+    end
+
+    def preload_transaction_drawer_associations
+      return unless @entry.transaction?
+
+      ActiveRecord::Associations::Preloader.new(
+        records: [ @entry ],
+        associations: Tax::DeductionsPresenter::DEDUCTION_ENTRY_INCLUDES
+      ).call
     end
 
     def set_new_transaction_form_options
