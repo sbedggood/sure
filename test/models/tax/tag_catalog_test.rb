@@ -21,6 +21,14 @@ class Tax::TagCatalogTest < ActiveSupport::TestCase
     assert Tax::TagCatalog.deduction_group_tag?("Tax: For Review")
   end
 
+  test "donations and agent fees are deduction tags with dedicated summary lines" do
+    assert Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::DONATIONS_TAG)
+    assert Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::AGENT_FEES_TAG)
+    assert Tax::TagCatalog.summary_line_tag?(Tax::TagCatalog::DONATIONS_TAG)
+    assert Tax::TagCatalog.summary_line_tag?(Tax::TagCatalog::AGENT_FEES_TAG)
+    refute Tax::TagCatalog.summary_line_tag?("Tax: Phone")
+  end
+
   test "payslip tag is document only and not a deduction tag" do
     assert Tax::TagCatalog.document_only_tag?(Tax::TagCatalog::PAYSLIP_TAG)
     refute Tax::TagCatalog.deduction_tag?(Tax::TagCatalog::PAYSLIP_TAG)

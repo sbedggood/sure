@@ -185,6 +185,49 @@ class Tax::SummaryTest < ActiveSupport::TestCase
     assert_in_delta 14_350.0, property[:expected_tax][:amount], 0.01
   end
 
+  test "grand total counts donations and agent fees once and matches deductions view" do
+    donations_tag = @family.tags.create!(name: Tax::TagCatalog::DONATIONS_TAG, color: "#61c9ea")
+    agent_fees_tag = @family.tags.create!(name: Tax::TagCatalog::AGENT_FEES_TAG, color: "#6471eb")
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 5),
+      amount: 20,
+      currency: "AUD",
+      name: "Charity",
+      tags: [ donations_tag ]
+    )
+
+    create_transaction(
+      account: @account,
+      date: Date.new(2023, 8, 6),
+      amount: 246.60,
+      currency: "AUD",
+      name: "Agent commission",
+      tags: [ agent_fees_tag ]
+    )
+
+    @family.tax_fy_settings.find_by(start_year: @start_year).update!(
+      deduction_business_use_percent: {
+        "Tax: Phone" => 60,
+        Tax::TagCatalog::DONATIONS_TAG => 100,
+        Tax::TagCatalog::AGENT_FEES_TAG => 100
+      }
+    )
+
+    summary = Tax::Summary.new(family: @family, start_year: @start_year).as_json
+    deductions = summary[:deductions]
+    tag_names = deductions[:tag_lines].map { |l| l[:tag] }
+
+    refute_includes tag_names, Tax::TagCatalog::DONATIONS_TAG
+    refute_includes tag_names, Tax::TagCatalog::AGENT_FEES_TAG
+    assert_equal 20.0, deductions[:donations][:claim]
+    assert_equal 246.60, deductions[:agent_fees][:claim]
+
+    presenter = Tax::DeductionsPresenter.new(family: @family, start_year: @start_year)
+    assert_in_delta presenter.claimable_grand_total.to_f, deductions[:grand_total], 0.01
+  end
+
   test "allocated costs apply allocation percent to expense total" do
     @family.tax_fy_settings.find_by(start_year: @start_year).update!(
       property_allocation_percent: 50,
