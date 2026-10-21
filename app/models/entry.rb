@@ -464,7 +464,11 @@ class Entry < ApplicationRecord
   end
 
   def split_parent?
-    child_entries.exists?
+    if association(:child_entries).loaded?
+      child_entries.any?
+    else
+      child_entries.exists?
+    end
   end
 
   def split_child?

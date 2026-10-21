@@ -290,7 +290,13 @@ class Transaction < ApplicationRecord
   # this leg's kind, so editing the kind (e.g. to standard) cannot bypass
   # the outflow's ownership.
   def category_set_on_transfer_outflow?
-    transfer_as_inflow.present? && transfer_as_inflow.categorizable?
+    inflow_transfer = if association(:transfer_as_inflow).loaded?
+      association(:transfer_as_inflow).target
+    else
+      transfer_as_inflow
+    end
+
+    inflow_transfer.present? && inflow_transfer.categorizable?
   end
 
   # Whether this non-editable transfer leg is a liability payment (shown

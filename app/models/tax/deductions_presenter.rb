@@ -5,7 +5,15 @@ module Tax
     DEDUCTION_ENTRY_INCLUDES = [
       :account,
       :parent_entry,
-      entryable: [ :tags, :category, :merchant, { attachments_attachments: :blob } ],
+      :child_entries,
+      entryable: [
+        :tags,
+        :category,
+        :merchant,
+        { attachments_attachments: :blob },
+        { transfer_as_outflow: { inflow_transaction: { entry: :account } } },
+        { transfer_as_inflow: { outflow_transaction: [ :category, { entry: :account } ] } }
+      ],
       parent_entry: { entryable: { attachments_attachments: :blob } }
     ].freeze
 

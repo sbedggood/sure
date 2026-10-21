@@ -35,6 +35,7 @@ module Tax
         direction: @deduction_direction
       )
       @section = "calendar" unless valid_section?(@section)
+      assign_deductions_row_context if @section == "deductions"
     end
 
     private
@@ -79,6 +80,17 @@ module Tax
           fy = Tax::FinancialYear.new(year)
           [ "#{fy.label} (#{fy.start_on.year}–#{fy.end_on.year})", year ]
         end.reverse
+      end
+
+      def assign_deductions_row_context
+        entries = @deductions.groups.flat_map(&:entries)
+        entry_ids = entries.map(&:id)
+        @accessible_account_ids = Current.user.accessible_accounts.pluck(:id)
+        @split_parent_entry_ids = if entry_ids.any?
+          Entry.where(parent_entry_id: entry_ids).distinct.pluck(:parent_entry_id).to_set
+        else
+          Set.new
+        end
       end
   end
 end
