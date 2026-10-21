@@ -80,7 +80,12 @@ module Tax
           .joins("INNER JOIN tags ON tags.id = taggings.tag_id")
           .where(date: financial_year.range)
           .where("tags.name LIKE ?", "Tax:%")
-          .includes(:account, entryable: [ :tags, :category, :merchant, { attachments_attachments: :blob } ])
+          .includes(
+            :account,
+            :parent_entry,
+            entryable: [ :tags, :category, :merchant, { attachments_attachments: :blob } ],
+            parent_entry: { entryable: { attachments_attachments: :blob } }
+          )
           .distinct
           .order(date: :desc)
       end

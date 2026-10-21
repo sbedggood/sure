@@ -529,6 +529,35 @@ class Transaction < ApplicationRecord
     true
   end
 
+  DisplayAttachment = Data.define(:attachment, :from_parent, :owner_transaction)
+
+  # Split children keep receipts on the excluded parent transaction.
+  def split_parent_transaction
+    return unless entry&.split_child?
+
+    parent = entry.parent_entry&.entryable
+    parent.is_a?(Transaction) ? parent : nil
+  end
+
+  def inherited_attachments
+    split_parent_transaction&.attachments || []
+  end
+
+  def display_attachments
+    parent_tx = split_parent_transaction
+    own = attachments.map { |attachment| DisplayAttachment.new(attachment:, from_parent: false, owner_transaction: self) }
+    return own unless parent_tx
+
+    inherited = parent_tx.attachments.map do |attachment|
+      DisplayAttachment.new(attachment:, from_parent: true, owner_transaction: parent_tx)
+    end
+    own + inherited
+  end
+
+  def display_attachments?
+    attachments.attached? || inherited_attachments.any?
+  end
+
   # Find potential posted transactions that might be duplicates of this pending transaction
   # Returns entries (not transactions) for UI consistency with transfer matcher
   # Lists recent posted transactions from the same account for manual merging

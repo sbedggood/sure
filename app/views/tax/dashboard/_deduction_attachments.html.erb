@@ -1,24 +1,27 @@
 <%# locals: (entry:) %>
-<% attachments = entry.transaction.attachments %>
-<% return unless attachments.attached? %>
+<% display_attachments = entry.transaction.display_attachments %>
+<% return if display_attachments.empty? %>
 
 <div class="absolute right-32 top-4 z-10 hidden lg:block">
-  <% if attachments.one? %>
-    <%= link_to rails_blob_path(attachments.first, disposition: "inline"),
+  <% if display_attachments.one? %>
+    <% item = display_attachments.first %>
+    <%= link_to rails_blob_path(item.attachment, disposition: "inline"),
           target: "_blank",
           rel: "noopener",
           class: "text-secondary hover:text-primary",
-          title: t("tax.deductions.has_attachments") do %>
+          title: item.from_parent ? t("transactions.attachments.from_original_charge") : t("tax.deductions.has_attachments") do %>
       <%= icon("paperclip", size: "sm") %>
     <% end %>
   <% else %>
     <%= render DS::Menu.new do |menu| %>
-      <% attachments.each do |attachment| %>
+      <% display_attachments.each do |item| %>
+        <% label = item.attachment.filename.to_s %>
+        <% label = "#{label} (#{t('transactions.attachments.from_original_charge')})" if item.from_parent %>
         <% menu.with_item(
              variant: "link",
-             text: attachment.filename.to_s,
+             text: label,
              icon: "paperclip",
-             href: rails_blob_path(attachment, disposition: "inline"),
+             href: rails_blob_path(item.attachment, disposition: "inline"),
              data: { turbo: false }
            ) %>
       <% end %>
