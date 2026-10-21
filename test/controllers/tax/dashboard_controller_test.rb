@@ -36,4 +36,30 @@ class Tax::DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_match "start_year=2023", response.body
     assert_match "sort=date", response.body
   end
+
+  test "deductions shows attachment indicator for split child with parent receipt" do
+    parent_entry = create_transaction(
+      account: @account,
+      date: Date.new(2023, 9, 1),
+      amount: 100,
+      currency: "AUD",
+      name: "Split purchase",
+      tags: [ @phone ]
+    )
+    parent_entry.entryable.attachments.attach(
+      io: StringIO.new("receipt"),
+      filename: "split-parent.pdf",
+      content_type: "application/pdf"
+    )
+    child = parent_entry.split!([
+      { name: "Business part", amount: 100, category_id: nil }
+    ]).first
+    child.transaction.tags << @phone
+
+    get tax_dashboard_path(start_year: 2023, section: "deductions")
+
+    assert_response :success
+    assert_match rails_blob_path(parent_entry.entryable.attachments.first, disposition: "inline"), response.body
+    assert_match "Business part", response.body
+  end
 end

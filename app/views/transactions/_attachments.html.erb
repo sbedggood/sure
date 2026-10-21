@@ -1,6 +1,6 @@
 <%# locals: (transaction:, can_upload: false, can_delete: false) %>
 <% entry = transaction.entry %>
-<% has_files = transaction.attachments.any? %>
+<% has_files = transaction.display_attachments? %>
 
 <div id="transaction_attachments_<%= transaction.id %>" class="pb-4">
   <% if entry && can_upload %>
@@ -73,69 +73,41 @@
 
   <!-- Attachments List -->
   <% if has_files %>
-    <div class="space-y-2">
-      <h4 class="text-sm font-medium text-primary"><%= t(".files", count: transaction.attachments.count) %></h4>
-      <div class="space-y-2">
-        <% transaction.attachments.each do |attachment| %>
-          <div class="flex items-center justify-between p-3 border border-primary rounded-lg bg-container">
-            <div class="flex items-center gap-3">
-              <div class="flex-shrink-0">
-                <% if attachment.image? %>
-                  <%= icon "image", size: "sm", color: "secondary" %>
-                <% else %>
-                  <%= icon "file", size: "sm", color: "secondary" %>
-                <% end %>
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-medium text-primary truncate"><%= attachment.filename %></p>
-                <p class="text-xs text-secondary"><%= number_to_human_size(attachment.byte_size) %></p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <%= link_to attachment_preview_tax_documents_path(attachment_id: attachment.id),
-                    class: "inline-flex items-center justify-center p-2 rounded-md border border-primary text-primary hover:bg-surface-hover",
-                    title: t("tax.documents_all.view"),
-                    aria: { label: t("tax.documents_all.view") },
-                    data: { turbo_frame: "document_viewer" } do %>
-                <%= icon("eye", size: "sm") %>
-              <% end %>
-
-              <%= render DS::Link.new(
-                    href: transaction_attachment_path(transaction, attachment, disposition: :attachment),
-                    variant: :outline,
-                    size: :sm,
-                    icon: "download",
-                    text: "",
-                    title: t("tax.documents_all.download"),
-                    data: { turbo: false }
-                  ) %>
-
-              <% if can_delete %>
-                <%= render DS::Button.new(
-                      href: transaction_attachment_path(transaction, attachment),
-                      method: :delete,
-                      variant: :outline_destructive,
-                      size: :sm,
-                      icon: "trash-2",
-                      confirm: CustomConfirm.for_resource_deletion("attachment")
-                    ) %>
-              <% end %>
-              <% if entry && can_upload && Tax::DocumentLinker.standalone_origin?(attachment) %>
-                <%= button_to tax_entry_attachment_restore_path(entry_id: entry.id),
-                      params: { attachment_id: attachment.id },
-                      method: :post,
-                      form: { data: { turbo_stream: true } },
-                      class: "inline-flex items-center justify-center p-2 rounded-md border border-primary text-primary hover:bg-surface-hover",
-                      title: t("tax.documents_all.restore_standalone"),
-                      aria: { label: t("tax.documents_all.restore_standalone") } do %>
-                  <%= icon("unlink", size: "sm") %>
-                <% end %>
-              <% end %>
-            </div>
+    <div class="space-y-4">
+      <% if transaction.attachments.any? %>
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-primary"><%= t(".files", count: transaction.attachments.count) %></h4>
+          <div class="space-y-2">
+            <% transaction.attachments.each do |attachment| %>
+              <%= render "transactions/attachment_row",
+                    attachment: attachment,
+                    owner_transaction: transaction,
+                    entry: entry,
+                    can_upload: can_upload,
+                    can_delete: can_delete,
+                    from_parent: false %>
+            <% end %>
           </div>
-        <% end %>
-      </div>
+        </div>
+      <% end %>
+
+      <% if transaction.inherited_attachments.any? %>
+        <% parent_transaction = transaction.split_parent_transaction %>
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-primary"><%= t(".from_original_charge") %></h4>
+          <div class="space-y-2">
+            <% transaction.inherited_attachments.each do |attachment| %>
+              <%= render "transactions/attachment_row",
+                    attachment: attachment,
+                    owner_transaction: parent_transaction,
+                    entry: entry,
+                    can_upload: can_upload,
+                    can_delete: false,
+                    from_parent: true %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
     </div>
   <% else %>
     <p class="text-sm text-secondary"><%= t(".no_attachments") %></p>
