@@ -76,6 +76,13 @@ module Tax
       deduction_tag?(tag_name) || for_review?(tag_name)
     end
 
+    # Donations and agent fees appear on dedicated ATO lines in the summary export;
+    # they stay in deduction groups for the Deductions view but must not duplicate in tag_lines.
+    def summary_line_tag?(tag_name)
+      name = tag_name.to_s
+      name == DONATIONS_TAG || name == AGENT_FEES_TAG
+    end
+
     def excluded_from_tax_workflow?(tag_name)
       declined?(tag_name)
     end

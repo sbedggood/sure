@@ -103,7 +103,9 @@ module Tax
       end
 
       def deductions_json
-        tag_groups = tagged_transactions.keys.select { |name| TagCatalog.deduction_tag?(name) }
+        tag_groups = tagged_transactions.keys.select do |name|
+          TagCatalog.deduction_tag?(name) && !TagCatalog.summary_line_tag?(name)
+        end
         lines = tag_groups.sort.map do |tag_name|
           entries = tagged_transactions[tag_name] || []
           amount = entries.sum { |e| e.amount }
